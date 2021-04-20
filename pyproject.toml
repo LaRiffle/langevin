@@ -1,0 +1,43 @@
+[tool.poetry]
+name = "pyrolyze"
+version = "0.1.0"
+description = ""
+authors = ["Louise Naudin <naudin.louise@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pandas = "^1.2.3"
+pytest = "^6.2.2"
+transformers = "^4.5.1"
+datasets = "^1.5.0"
+sentencepiece = "^0.1.95"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py36', 'py37', 'py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = 'black'
+line_length = 100
+
