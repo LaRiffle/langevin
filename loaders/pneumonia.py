@@ -19,7 +19,7 @@ def single_channel_loader(filename):
 class PneumoniaDataset(th.utils.data.Dataset):
     def __init__(
         self,
-        label_path="data/pneumonia/Labels.csv",
+        label_path="../PriMIA/data/Labels.csv",
         train=False,
         transform=None,
         batch_size=8,
@@ -48,7 +48,7 @@ class PneumoniaDataset(th.utils.data.Dataset):
             folder = {0: "normal", 1: "bacterial pneumonia", 2: "viral pneumonia"}[
                 row["Numeric_Label"]
             ]
-            full_path = os.path.join("data/pneumonia", path, folder, row["X_ray_image_name"])
+            full_path = os.path.join("../PriMIA/data", path, folder, row["X_ray_image_name"])
             img = single_channel_loader(full_path)
             if self.transform:
                 img = self.transform(img)
