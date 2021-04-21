@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from test import test
 
+import torch
 import torch.optim as optim
 import torchvision
 from torch import nn
 
 from loaders import cifar10
 from train import sgd_train
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 @dataclass
@@ -18,7 +21,7 @@ class Arguments:
     log_interval = 50 * 4
     noisy_training = True
     sigma = 0.01
-    device = "cpu"
+    device = device
 
 
 args = Arguments()
