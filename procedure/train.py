@@ -18,7 +18,7 @@ def sgd_train(args, model, train_loader, criterion, optimizer, epoch):
 
         optimizer.step()
 
-        if args.noisy_training:
+        if args.langevin:
             factor = torch.tensor(2 * args.lr * args.sigma ** 2).sqrt()
 
             with torch.no_grad():
