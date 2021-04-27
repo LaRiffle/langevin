@@ -38,18 +38,6 @@ if __name__ == "__main__":
         default="pneumonia",
     )
 
-    # parser.add_argument(
-    #     "--test",
-    #     help="run testing on the complete test dataset",
-    #     action="store_true",
-    # )
-    #
-    # parser.add_argument(
-    #     "--train",
-    #     help="Fine tune for n epochs",
-    #     action="store_true",
-    # )
-
     parser.add_argument(
         "--full_train",
         help="Train *all* the layers",
@@ -77,6 +65,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--optim",
+        type=str,
+        help="optimizer to use (sgd, adam)",
+        default="sgd",
+    )
+
+    parser.add_argument(
         "--lr",
         type=float,
         help="[needs --train] learning rate of the SGD",
@@ -88,6 +83,26 @@ if __name__ == "__main__":
         type=float,
         help="[needs --train] momentum of the SGD",
         default=0,
+    )
+
+    parser.add_argument(
+        "--scheduler",
+        help="Use a scheduler for the learning rate",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--step_size",
+        type=float,
+        help="[needs --scheduler] Period of learning rate decay. Default 10.",
+        default=10,
+    )
+
+    parser.add_argument(
+        "--gamma",
+        type=float,
+        help="[needs --scheduler] Multiplicative factor of learning rate decay. Default: 0.5",
+        default=0.5,
     )
 
     parser.add_argument(
@@ -118,6 +133,10 @@ if __name__ == "__main__":
         if cmd_args.momentum != 0:
             print("WARNING: With DPSGD, momentum should be 0!")
 
+    if cmd_args.optim == "adam":
+        if cmd_args.momentum != 0:
+            raise ValueError("With Adam optimizer, momentum should not be set.")
+
     class Arguments:
         model = cmd_args.model.lower()
         dataset = cmd_args.dataset.lower()
@@ -132,8 +151,14 @@ if __name__ == "__main__":
         test_batch_size = cmd_args.test_batch_size or cmd_args.batch_size
 
         epochs = cmd_args.epochs
+
+        optim = cmd_args.optim
         lr = cmd_args.lr
         momentum = cmd_args.momentum
+
+        scheduler = cmd_args.scheduler
+        step_size = cmd_args.step_size
+        gamma = cmd_args.gamma
 
         langevin = cmd_args.langevin
         sigma = cmd_args.sigma

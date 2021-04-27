@@ -24,6 +24,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def alexnet(args):
 
+    assert args.optim == "sgd"  # nosec
+    assert args.scheduler is False  # nosec
+
     train_loader, test_loader = cifar10(args)
 
     alexnet = torchvision.models.alexnet(pretrained=True)

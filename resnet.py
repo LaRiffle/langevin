@@ -21,12 +21,23 @@ def resnet(args):
 
     resnet.to(args.device)
 
+    if args.full_train:
+        parameters = resnet.parameters()
+    else:
+        parameters = resnet.fc.parameters()
+
     criterion = nn.CrossEntropyLoss()
-    # FOR COMPLETE TRAINING optimizer = optim.SGD(alexnet.parameters(), lr=0.001, momentum=0.9)
-    optimizer = optim.SGD(resnet.parameters(), lr=args.lr)
 
-    # NOT SUPPORTED scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+    if args.optim == "sgd":
+        optimizer = optim.SGD(parameters, lr=args.lr, momentum=args.momentum)
+    elif args.optim == "adam":
+        optimizer = optim.Adam(parameters, lr=args.lr)
 
-    for i in range(args.epochs):
-        sgd_train(args, resnet, train_loader, criterion, optimizer, i)
+    if args.scheduler:
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+
+    for epoch in range(args.epochs):
+        sgd_train(args, resnet, train_loader, criterion, optimizer, epoch)
         test(args, resnet, test_loader)
+        if args.scheduler:
+            scheduler.step()
