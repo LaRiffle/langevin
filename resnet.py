@@ -31,7 +31,7 @@ def resnet(args):
     if args.optim == "sgd":
         optimizer = optim.SGD(parameters, lr=args.lr, momentum=args.momentum)
     elif args.optim == "adam":
-        optimizer = optim.Adam(parameters, lr=args.lr)
+        optimizer = optim.Adam(parameters, lr=args.lr, betas=(args.beta1, args.beta2))
 
     if args.scheduler:
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)

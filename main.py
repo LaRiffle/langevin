@@ -79,6 +79,20 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--beta1",
+        type=float,
+        help="[needs --optim adam] first beta parameter for Adam optimizer. Default 0.9.",
+        default=0.9,
+    )
+
+    parser.add_argument(
+        "--beta2",
+        type=float,
+        help="[needs --optim adam] first beta parameter for Adam optimizer. Default 0.999.",
+        default=0.999,
+    )
+
+    parser.add_argument(
         "--momentum",
         type=float,
         help="[needs --train] momentum of the SGD",
@@ -136,6 +150,9 @@ if __name__ == "__main__":
     if cmd_args.optim == "adam":
         if cmd_args.momentum != 0:
             raise ValueError("With Adam optimizer, momentum should not be set.")
+    else:
+        if cmd_args.beta1 != 0.9 or cmd_args.beta2 != 0.999:
+            raise ValueError("Don't set the betas if optim is not 'adam'.")
 
     class Arguments:
         model = cmd_args.model.lower()
@@ -155,6 +172,8 @@ if __name__ == "__main__":
         optim = cmd_args.optim
         lr = cmd_args.lr
         momentum = cmd_args.momentum
+        beta1 = cmd_args.beta1
+        beta2 = cmd_args.beta2
 
         scheduler = cmd_args.scheduler
         step_size = cmd_args.step_size
