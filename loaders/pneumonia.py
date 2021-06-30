@@ -66,7 +66,7 @@ class PneumoniaDataset(th.utils.data.Dataset):
 
 
 def pneumonia(args):
-    transform = transforms.Compose(
+    stats_transform = transforms.Compose(
         [
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -74,14 +74,19 @@ def pneumonia(args):
             # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
     )
-    dataset = PneumoniaDataset(train=True, transform=transform, batch_size=args.batch_size)
+    dataset = PneumoniaDataset(train=True, transform=stats_transform, batch_size=args.batch_size)
 
     val_mean_std = calc_mean_std(dataset)
     mean, std = val_mean_std
+    stats_transform.transform.transforms.transforms.append(
+        a.Normalize(mean, std, max_pixel_value=1.0)
+    )
     transform = create_albu_transform(args, mean, std)
 
     train_loader = PneumoniaDataset(train=True, transform=transform, batch_size=args.batch_size)
-    test_loader = PneumoniaDataset(train=False, transform=transform, batch_size=args.batch_size)
+    test_loader = PneumoniaDataset(
+        train=False, transform=stats_transform, batch_size=args.batch_size
+    )
 
     return train_loader, test_loader
 
