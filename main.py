@@ -27,14 +27,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        help="model to use for inference (alexnet, resnet18)",
+        help="model to use for inference (alexnet, resnet18). Default resnet18.",
         default="resnet18",
     )
 
     parser.add_argument(
         "--dataset",
         type=str,
-        help="dataset to use (cifar10, pneumonia)",
+        help="dataset to use (cifar10, pneumonia). Default pneumonia.",
         default="pneumonia",
     )
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--batch_size",
         type=int,
-        help="size of the batch to use",
+        help="size of the batch to use. Default 64.",
         default=64,
     )
     parser.add_argument(
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--epochs",
         type=int,
-        help="[needs --train] number of epochs to train on",
+        help="[needs --train] number of epochs to train on. Default 30.",
         default=30,
     )
 
@@ -74,14 +74,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--lr",
         type=float,
-        help="[needs --train] learning rate of the SGD",
+        help="[needs --train] learning rate of the SGD. Default 0.001.",
         default=0.001,
     )
 
     parser.add_argument(
         "--momentum",
         type=float,
-        help="[needs --train] momentum of the SGD",
+        help="[needs --train] momentum of the SGD. Default 0.",
         default=0,
     )
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sigma",
         type=float,
-        help="[needs --langevin] noise for the Langevin DP",
+        help="[needs --langevin] noise for the Langevin DP. Default 0.01.",
         default=0.01,
     )
 
@@ -167,6 +167,42 @@ if __name__ == "__main__":
         log_interval = cmd_args.log_interval
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        pretrained = True
+        batch_size = 200  # FIXME conflict with above
+        train_resolution = 224
+        inference_resolution = 224
+        lr = 0.00025320576414208793  # FIXME conflict with above
+        end_lr = 0.00025226049769018076
+        beta1 = 0.580178104854167
+        beta2 = 0.9307811218548168
+        weight_decay = 3.6897202836578385e-12
+        optim = "adam"
+        rotation = 26
+        translate = 0.0
+        scale = 0.36890351894258405
+        shear = 8
+        noise_std = 0.0367014748759099
+        noise_prob = 0.7878737537443424
+        albu_prob = 0.19488241828717623
+        individual_albu_probs = 0.43795095886930185
+        clahe = False
+        randomgamma = True
+        randombrightness = False
+        blur = False
+        elastic = False
+        optical_distortion = False
+        grid_distortion = False
+        grid_shuffle = False
+        hsv = False
+        invert = True
+        cutout = False
+        shadow = True
+        fog = False
+        sun_flare = False
+        solarize = True
+        equalize = True
+        grid_dropout = False
 
     args = Arguments()
 
