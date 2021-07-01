@@ -174,10 +174,11 @@ if __name__ == "__main__":
         inference_resolution = 224
         lr = 0.00025320576414208793  # FIXME conflict with above
         end_lr = 0.00025226049769018076
+        restarts = 1
         beta1 = 0.580178104854167
         beta2 = 0.9307811218548168
         weight_decay = 3.6897202836578385e-12
-        optim = "adam"
+        optim = "adam"  # FIXME conflict with above
         rotation = 26
         translate = 0.0
         scale = 0.36890351894258405
