@@ -173,7 +173,7 @@ if __name__ == "__main__":
         train_resolution = 224
         inference_resolution = 224
         lr = 0.00025320576414208793  # FIXME conflict with above
-        end_lr = 0.00025226049769018076
+        end_lr = 0.00005226049769018076 # 0.00025226049769018076
         restarts = 1
         beta1 = 0.580178104854167
         beta2 = 0.9307811218548168
