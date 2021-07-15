@@ -118,6 +118,22 @@ if __name__ == "__main__":
         default=0.01,
     )
 
+    parser.add_argument(
+        "-c",
+        "--max-per-sample-grad_norm",
+        type=float,
+        default=1.0,
+        metavar="C",
+        help="Clip per-sample gradients to this norm (default 1.0)",
+    )
+    parser.add_argument(
+        "--delta",
+        type=float,
+        default=1e-5,
+        metavar="D",
+        help="Target delta (default: 1e-5)",
+    )
+
     parser.add_argument("--verbose", help="show extra information and metrics", action="store_true")
 
     parser.add_argument(
@@ -173,12 +189,12 @@ if __name__ == "__main__":
         train_resolution = 224
         inference_resolution = 224
         lr = 0.00025320576414208793  # FIXME conflict with above
-        end_lr = 0.00005226049769018076 # 0.00025226049769018076
+        end_lr = 0.00005226049769018076  # 0.00025226049769018076
         restarts = 1
         beta1 = 0.580178104854167
         beta2 = 0.9307811218548168
         weight_decay = 3.6897202836578385e-12
-        optim = "adam"  # FIXME conflict with above
+        # optim = "adam"  # FIXME conflict with above
         rotation = 26
         translate = 0.0
         scale = 0.36890351894258405

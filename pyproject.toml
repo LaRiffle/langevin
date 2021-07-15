@@ -11,8 +11,13 @@ pytest = "^6.2.2"
 transformers = "^4.5.1"
 datasets = "^1.5.0"
 sentencepiece = "^0.1.95"
+torch = "^1.9.0"
+torchvision = "^0.10.0"
+albumentations = "^1.0.3"
+opacus = "^0.14.0"
 
 [tool.poetry.dev-dependencies]
+black = "^21.6b0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
