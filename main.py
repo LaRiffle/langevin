@@ -1,5 +1,7 @@
 import argparse
+from faulthandler import disable
 
+import numpy as np
 import torch
 
 from alexnet import alexnet
@@ -7,6 +9,13 @@ from resnet import resnet
 
 
 def run(args):
+
+    if args.fixed_seed:
+        print(f"Fixed seed for Torch, Numpy and Opacus: {args.fixed_seed}")
+        torch.set_deterministic(True)
+        torch.manual_seed(args.fixed_seed)
+        np.random.seed(args.fixed_seed)
+
     print(f"Training over {args.epochs} epochs")
     print("model:\t\t", args.model)
     print("dataset:\t", args.dataset)
@@ -112,6 +121,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--disable_dp",
+        help="Deactivates DP SGD",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--sigma",
         type=float,
         help="[needs --langevin] noise for the Langevin DP. Default 0.01.",
@@ -142,7 +157,12 @@ if __name__ == "__main__":
         help="[needs --test or --train] log intermediate metrics every n batches",
         default=10,
     )
-
+    parser.add_argument(
+        "--fixed_seed",
+        type=int,
+        help="Fixed seed > 0. 0 means not deterministic. Default 42",
+        default=42,
+    )
     cmd_args = parser.parse_args()
 
     if cmd_args.langevin:
@@ -178,9 +198,14 @@ if __name__ == "__main__":
 
         langevin = cmd_args.langevin
         sigma = cmd_args.sigma
+        disable_dp = cmd_args.disable_dp
+        max_per_sample_grad_norm = cmd_args.max_per_sample_grad_norm
+        delta = cmd_args.delta
+        # TODO: add epsilon and epsilon_search
 
         verbose = cmd_args.verbose
         log_interval = cmd_args.log_interval
+        fixed_seed = cmd_args.fixed_seed
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

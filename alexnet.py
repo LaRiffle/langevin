@@ -69,6 +69,8 @@ def alexnet(args):
             max_grad_norm=args.max_per_sample_grad_norm,
             secure_rng=False,
         )
+        if args.fixed_seed:
+            privacy_engine._set_seed(10)
         privacy_engine.attach(optimizer)
     # NOT SUPPORTED scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
