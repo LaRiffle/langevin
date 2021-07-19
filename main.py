@@ -148,6 +148,12 @@ if __name__ == "__main__":
         metavar="D",
         help="Target delta (default: 1e-5)",
     )
+    parser.add_argument(
+        "--data_aug_factor",
+        type=int,
+        help="Data augmentation factor. 1 means ni augmentation (default)",
+        default=1,
+    )
 
     parser.add_argument("--verbose", help="show extra information and metrics", action="store_true")
 
@@ -201,6 +207,7 @@ if __name__ == "__main__":
         disable_dp = cmd_args.disable_dp
         max_per_sample_grad_norm = cmd_args.max_per_sample_grad_norm
         delta = cmd_args.delta
+        data_aug_factor = cmd_args.data_aug_factor
         # TODO: add epsilon and epsilon_search
 
         verbose = cmd_args.verbose

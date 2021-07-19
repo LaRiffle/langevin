@@ -3,10 +3,11 @@ import torch.optim as optim
 import torchvision
 from opacus import PrivacyEngine
 from torch import nn
+from torchvision import transforms
 
 from loaders import cifar10
 from procedure.test import test
-from procedure.train import sgd_train
+from procedure.train import sgd_train, sgd_train_augmented
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -74,8 +75,24 @@ def alexnet(args):
         privacy_engine.attach(optimizer)
     # NOT SUPPORTED scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
+    # TODO: Fancier transformations
+
+    transformation_list = [
+        transforms.RandomHorizontalFlip(p=1),
+        transforms.RandomVerticalFlip(p=1),
+    ]
+    for _ in range(args.data_aug_factor - 2):
+        transformation_list.append(transforms.RandomRotation(180))
+    transformation_list = transformation_list[: args.data_aug_factor]
+
     for i in range(args.epochs):
-        sgd_train(args, alexnet, train_loader, criterion, optimizer, i)
+
+        if args.data_aug_factor > 1:
+            sgd_train_augmented(
+                args, alexnet, train_loader, criterion, optimizer, i, transformation_list
+            )
+        else:
+            sgd_train(args, alexnet, train_loader, criterion, optimizer, i)
         test(args, alexnet, test_loader)
 
     if not args.disable_dp:

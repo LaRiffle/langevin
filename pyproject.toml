@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "pyrolyze"
+name = "langevin"
 version = "0.1.0"
 description = ""
-authors = ["Louise Naudin <naudin.louise@gmail.com>"]
+authors = ["Theo Ryffel", "Pierre Tholoniat"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
