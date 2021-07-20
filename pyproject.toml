@@ -15,6 +15,8 @@ torch = "^1.9.0"
 torchvision = "^0.10.0"
 albumentations = "^1.0.3"
 opacus = "^0.14.0"
+einops = "^0.3.0"
+loguru = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 black = "^21.6b0"

@@ -12,7 +12,7 @@ def run(args):
 
     if args.fixed_seed:
         print(f"Fixed seed for Torch, Numpy and Opacus: {args.fixed_seed}")
-        torch.set_deterministic(True)
+        torch.use_deterministic_algorithms(True)
         torch.manual_seed(args.fixed_seed)
         np.random.seed(args.fixed_seed)
 
@@ -125,6 +125,12 @@ if __name__ == "__main__":
         help="Deactivates DP SGD",
         action="store_true",
     )
+    parser.add_argument(
+        "--dp",
+        type=str,
+        help="Type of DP setting in ['opacus', 'aug', 'false']. Default 'false'.",
+        default="false",
+    )
 
     parser.add_argument(
         "--sigma",
@@ -205,6 +211,7 @@ if __name__ == "__main__":
         langevin = cmd_args.langevin
         sigma = cmd_args.sigma
         disable_dp = cmd_args.disable_dp
+        dp = cmd_args.dp
         max_per_sample_grad_norm = cmd_args.max_per_sample_grad_norm
         delta = cmd_args.delta
         data_aug_factor = cmd_args.data_aug_factor

@@ -1,11 +1,101 @@
 import time
 from typing import Iterable
 
+import einops
 import numpy as np
 import torch
+from loguru import logger
 
 
 def sgd_train_augmented(
+    args, model, train_loader, criterion, optimizer, epoch, transformation_list
+):
+    """
+    Handmade DPSGD with microbatching
+    Pyvacy is a good start: https://github.com/ChrisWaites/pyvacy/blob/master/pyvacy/optim/dp_optimizer.py
+    """
+    model.train()
+
+    # TODO: To improve efficiency
+    # - pack different microbatches on the GPU as the same time (but you have to keep track of the norms)
+    # - implement the speed trick
+    # - plug into Opacus
+    # - use Jax?
+
+    for batch_idx, (data, target) in enumerate(train_loader):
+        start_time = time.time()
+
+        # Initialize/clean-up accumulated microbatch grads
+        # TODO: check init and update!
+        # TODO: check scaling
+        for param in [p for (_, p) in model.named_parameters() if p.requires_grad]:
+            param.accumulated_microbatch_grad = torch.zeros_like(param.data)
+
+        for image, label in zip(data, target):
+
+            # Build a microbatch with a single augmented example
+            image_list = [t(image) for t in transformation_list]
+            microbatch_data = einops.rearrange(image_list, "b h w c -> b h w c")
+
+            # The label is the same for the whole microbatch
+            microbatch_target = einops.rearrange([label for _ in transformation_list], "b -> b")
+
+            # Forward and backward pass as usual
+            microbatch_data, microbatch_target = microbatch_data.to(
+                args.device
+            ), microbatch_target.to(args.device)
+            optimizer.zero_grad()
+            output = model(microbatch_data)
+            loss = criterion(output, microbatch_target)
+            loss.backward()
+
+            # Calculate the clipping coefficient for the microbatch gradients
+            microbatch_sq_norm = 0.0
+            for param in [p for (_, p) in model.named_parameters() if p.requires_grad]:
+                microbatch_sq_norm += param.grad.data.norm(2).item() ** 2
+            microbatch_grad_norm = microbatch_sq_norm ** 0.5
+            clip_coef = min(args.max_per_sample_grad_norm / (microbatch_grad_norm + 1e-6), 1.0)
+
+            # Clip and save the gradients for later
+            for param in [p for (_, p) in model.named_parameters() if p.requires_grad]:
+                param.accumulated_microbatch_grad.add_(param.grad.data.mul(clip_coef))
+
+        # Take the accumulated gradients and put them into the regular gradient field
+        # + add noise and scale
+        for param in [p for (_, p) in model.named_parameters() if p.requires_grad]:
+            param.grad.data = param.accumulated_microbatch_grad.clone()
+            param.grad.data.add_(
+                args.max_per_sample_grad_norm * args.sigma * torch.randn_like(param.grad.data)
+            )
+            # We added `args.batch_size` microbatches, where each had gradients below `args.max_per_sample_grad_norm`
+            param.grad.data.mul_(1 / args.batch_size)
+
+        # Finally, take a vanilla optimizer step
+        optimizer.step()
+
+        tot_time = time.time() - start_time
+
+        if batch_idx % args.log_interval == 0:
+            n_items = (
+                len(train_loader.dataset)
+                if hasattr(train_loader, "dataset")
+                else len(train_loader.labels)
+            )
+            logger.info(
+                "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime: {:.3f}s ({:.3f}s/item) [{:.3f}]".format(  # noqa
+                    epoch,
+                    batch_idx * args.batch_size,
+                    n_items,
+                    100.0 * batch_idx / len(train_loader),
+                    loss.item(),
+                    tot_time,
+                    tot_time / args.batch_size,
+                    args.batch_size,
+                )
+            )
+
+
+def sgd_train_augmented_cheap(
     args, model, train_loader, criterion, optimizer, epoch, transformation_list
 ):
     """

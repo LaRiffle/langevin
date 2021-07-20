@@ -1,10 +1,12 @@
 import torch
 import torch.optim as optim
 import torchvision
+from loguru import logger
 from opacus import PrivacyEngine
 from torch import nn
 from torchvision import transforms
 
+import augmentation
 from loaders import cifar10
 from procedure.test import test
 from procedure.train import sgd_train, sgd_train_augmented
@@ -58,7 +60,7 @@ def alexnet(args):
     optimizer = optim.SGD(alexnet.classifier.parameters(), lr=args.lr)
 
     # TODO: decouple models and DP training/augmentation?
-    if not args.disable_dp:
+    if args.dp == "opacus":
 
         # TODO: careful with augmentation
         sample_rate = args.batch_size / len(train_loader.dataset)
@@ -73,28 +75,30 @@ def alexnet(args):
         if args.fixed_seed:
             privacy_engine._set_seed(10)
         privacy_engine.attach(optimizer)
-    # NOT SUPPORTED scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
-    # TODO: Fancier transformations
+        # TODO: run for more epochs
 
-    transformation_list = [
-        transforms.RandomHorizontalFlip(p=1),
-        transforms.RandomVerticalFlip(p=1),
-    ]
-    for _ in range(args.data_aug_factor - 2):
-        transformation_list.append(transforms.RandomRotation(180))
-    transformation_list = transformation_list[: args.data_aug_factor]
-
-    for i in range(args.epochs):
-
-        if args.data_aug_factor > 1:
-            sgd_train_augmented(
-                args, alexnet, train_loader, criterion, optimizer, i, transformation_list
-            )
-        else:
+        for i in range(args.epochs):
             sgd_train(args, alexnet, train_loader, criterion, optimizer, i)
-        test(args, alexnet, test_loader)
+            test(args, alexnet, test_loader)
 
-    if not args.disable_dp:
         epsilon, best_alpha = optimizer.privacy_engine.get_privacy_spent(args.delta)
         print(f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {best_alpha}")
+
+    elif args.dp == "aug":
+        # TODO: Fancier transformations
+
+        transformation_list = augmentation.flip_rotate(args.data_aug_factor)
+        for i in range(args.epochs):
+            sgd_train_augmented(
+                args,
+                alexnet,
+                train_loader,
+                criterion,
+                optimizer,
+                i,
+                transformation_list,
+            )
+            test(args, alexnet, test_loader)
+
+        # TODO: custom accounting
