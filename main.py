@@ -3,6 +3,7 @@ from faulthandler import disable
 
 import numpy as np
 import torch
+import yaml
 
 from alexnet import alexnet
 from resnet import resnet
@@ -22,11 +23,15 @@ def run(args):
     print("batch_size:\t", args.batch_size)
 
     if args.model == "resnet18":
-        resnet(args)
+        metrics = resnet(args)
     elif args.model == "alexnet":
-        alexnet(args)
+        metrics = alexnet(args)
     else:
         raise ValueError("")
+
+    if args.metrics:
+        with open(args.metrics, "w") as f:
+            yaml.dump(metrics, f)
 
 
 if __name__ == "__main__":
@@ -170,6 +175,13 @@ if __name__ == "__main__":
         default=10,
     )
     parser.add_argument(
+        "--metrics",
+        type=str,
+        default="",
+        help="Where the metrics will be stored. Leave empty (default) if you don't want to store the metrics.",
+    )
+
+    parser.add_argument(
         "--fixed_seed",
         type=int,
         help="Fixed seed > 0. 0 means not deterministic. Default 42",
@@ -219,6 +231,8 @@ if __name__ == "__main__":
 
         verbose = cmd_args.verbose
         log_interval = cmd_args.log_interval
+        metrics = cmd_args.metrics
+
         fixed_seed = cmd_args.fixed_seed
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

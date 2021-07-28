@@ -29,3 +29,5 @@ def test(args, model, test_loader):
             args.test_batch_size,
         )
     )
+
+    return correct.item() / n_items

@@ -1,0 +1,48 @@
+environment:
+  modules:
+    - cgpu
+    - gcc/8.3.0
+    # - pytorch/v1.6.0-gpu
+  precommands:
+    - "poetry shell"
+    - "srun which python"
+    - "export CUBLAS_WORKSPACE_CONFIG=:4096:8" # To fix the seed for CUDA
+    - "export MASTER_ADDR=`scontrol show hostnames $SLURM_JOB_NODELIST | head -1`"
+    - "export MASTER_PORT=7440"
+  constraint: gpu
+  gres: gpu:1
+  nodes: 1
+  ntasks-per-node: 1
+  account: m1759
+  qos: special
+  cpus-per-task: 4
+  time: "0:30:00"
+  job-name: exappai
+  exclusive: False
+arguments:
+  # python_executable: /global/u2/t/tholop/.cache/pypoetry/virtualenvs/langevin-bxipJ7HI-py3.8/bin/python
+  python_executable: python
+  python_file: main.py
+  max-per-sample-grad_norm:
+    - 1.0
+    - 10.0
+  sigma:
+    - 0.01
+    - 0.1
+  epochs:
+    - 64
+  batch_size: 32
+  dataset: cifar10
+  model: alexnet
+  optim: sgd
+  data_aug_factor:
+    - 1
+    - 4
+    - 8
+    - 16
+    - 32
+  dp:
+    - aug
+    # - opacus
+    # - "false"
+  fixed_seed: 1

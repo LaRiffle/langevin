@@ -22,6 +22,9 @@ def sgd_train_augmented(
     # - plug into Opacus
     # - use Jax?
 
+    # TODO: try foreach
+    # TODO: scaffolding and logs
+
     for batch_idx, (data, target) in enumerate(train_loader):
         start_time = time.time()
 

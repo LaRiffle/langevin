@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import torch
 import torch.optim as optim
 import torchvision
@@ -26,7 +28,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 #     device = device
 
 
-def alexnet(args):
+def alexnet(args) -> dict:
+
+    metrics = {}
 
     assert args.optim == "sgd"  # nosec
     assert args.scheduler is False  # nosec
@@ -89,7 +93,11 @@ def alexnet(args):
         # TODO: Fancier transformations
 
         transformation_list = augmentation.flip_rotate(args.data_aug_factor)
+        metrics["test_accuracy"] = []
+        metrics["epoch_training_time"] = []
+
         for i in range(args.epochs):
+            start_time = datetime.now()
             sgd_train_augmented(
                 args,
                 alexnet,
@@ -99,6 +107,14 @@ def alexnet(args):
                 i,
                 transformation_list,
             )
-            test(args, alexnet, test_loader)
+            metrics["epoch_training_time"].append((datetime.now() - start_time).total_seconds())
+            test_accuracy = test(args, alexnet, test_loader)
+            metrics["test_accuracy"].append(test_accuracy)
+
+        metrics["avg_epoch_training_time"] = str(
+            timedelta(seconds=int(sum(metrics["epoch_training_time"]) / args.epochs))
+        )
 
         # TODO: custom accounting
+
+    return metrics
