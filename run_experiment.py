@@ -88,7 +88,10 @@ def generate_run_configs(yaml_path, dry_run, logs_root):
         write_batch_script(environment.copy(), config, script_path)
         if not dry_run:
             try:
-                subprocess.run(f"module load cgpu; sbatch {script_path}", shell=True)
+                subprocess.run(
+                    f"{'module load cgpu; ' if 'modules' in environment else ''}sbatch {script_path}",
+                    shell=True,
+                )
             except Exception as e:
                 print(f"This configuration failed. \n {e}")
 
@@ -96,7 +99,7 @@ def generate_run_configs(yaml_path, dry_run, logs_root):
 def write_batch_script(environment, arguments, output_path):
     with open(output_path, "w") as f:
         f.write("#!/bin/bash\n")
-        modules = environment.pop("modules")
+        modules = environment.pop("modules", None)
         precommands = environment.pop("precommands")
 
         # Write the #SBATCH options
@@ -108,9 +111,10 @@ def write_batch_script(environment, arguments, output_path):
                 f.write(f"#SBATCH --{key}={value}\n")
 
         # Load the modules.
-        f.write("module purge\n")
-        for module in modules:
-            f.write(f"module load {module}\n")
+        if modules:
+            f.write("module purge\n")
+            for module in modules:
+                f.write(f"module load {module}\n")
 
         # Run arbitrary precommands
         for precommand in precommands:

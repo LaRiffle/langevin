@@ -5,6 +5,7 @@ import torch.optim as optim
 import torchvision
 from loguru import logger
 from opacus import PrivacyEngine
+from opacus.privacy_engine import get_noise_multiplier
 from torch import nn
 from torchvision import transforms
 
@@ -14,7 +15,7 @@ from procedure.test import test
 from procedure.train import sgd_train, sgd_train_augmented
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+ALPHAS = [1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64))
 #
 # @dataclass
 # class Arguments:
@@ -32,7 +33,7 @@ def alexnet(args) -> dict:
 
     metrics = {}
 
-    assert args.optim == "sgd"  # nosec
+    # assert args.optim == "sgd"  # nosec
     assert args.scheduler is False  # nosec
 
     train_loader, test_loader = cifar10(args)
@@ -61,7 +62,7 @@ def alexnet(args) -> dict:
 
     criterion = nn.CrossEntropyLoss()
     # FOR COMPLETE TRAINING optimizer = optim.SGD(alexnet.parameters(), lr=0.001, momentum=0.9)
-    optimizer = optim.SGD(alexnet.classifier.parameters(), lr=args.lr)
+    optimizer = optim.Adam(alexnet.classifier.parameters(), lr=args.lr)
 
     # TODO: decouple models and DP training/augmentation?
     if args.dp == "opacus":
@@ -71,8 +72,11 @@ def alexnet(args) -> dict:
         privacy_engine = PrivacyEngine(
             alexnet,
             sample_rate=sample_rate,
-            alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
-            noise_multiplier=args.sigma,
+            alphas=ALPHAS,
+            noise_multiplier=args.sigma if args.sigma >= 0 else None,
+            target_epsilon=args.target_epsilon if args.sigma < 0 else None,
+            target_delta=args.delta,
+            epochs=args.epochs,
             max_grad_norm=args.max_per_sample_grad_norm,
             secure_rng=False,
         )
@@ -80,17 +84,36 @@ def alexnet(args) -> dict:
             privacy_engine._set_seed(10)
         privacy_engine.attach(optimizer)
 
-        # TODO: run for more epochs
-
+        metrics["test_accuracy"] = []
+        metrics["epoch_training_time"] = []
         for i in range(args.epochs):
+            start_time = datetime.now()
             sgd_train(args, alexnet, train_loader, criterion, optimizer, i)
-            test(args, alexnet, test_loader)
+            metrics["epoch_training_time"].append((datetime.now() - start_time).total_seconds())
+            test_accuracy = test(args, alexnet, test_loader)
+            metrics["test_accuracy"].append(test_accuracy)
 
         epsilon, best_alpha = optimizer.privacy_engine.get_privacy_spent(args.delta)
         print(f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {best_alpha}")
 
+        metrics["avg_epoch_training_time"] = str(
+            timedelta(seconds=int(sum(metrics["epoch_training_time"]) / args.epochs))
+        )
+
     elif args.dp == "aug":
         # TODO: Fancier transformations
+
+        if args.sigma < 0:
+            args.sigma = get_noise_multiplier(
+                target_epsilon=args.target_epsilon,
+                target_delta=args.delta,
+                sample_rate=args.batch_size / len(train_loader.dataset),
+                epochs=args.epochs,
+                alphas=ALPHAS,
+                sigma_min=0.001,
+                sigma_max=100.0,
+            )
+            logger.info(f"Computed sigma from epsilon: {args.sigma}")
 
         transformation_list = augmentation.flip_rotate(args.data_aug_factor)
         metrics["test_accuracy"] = []
@@ -115,6 +138,6 @@ def alexnet(args) -> dict:
             timedelta(seconds=int(sum(metrics["epoch_training_time"]) / args.epochs))
         )
 
-        # TODO: custom accounting
+        # Custom accounting
 
     return metrics

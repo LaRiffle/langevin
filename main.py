@@ -141,7 +141,12 @@ if __name__ == "__main__":
         "--sigma",
         type=float,
         help="[needs --langevin] noise for the Langevin DP. Default 0.01.",
-        default=0.01,
+        default=-1,
+    )
+    parser.add_argument(
+        "--target_epsilon",
+        type=float,
+        default=10.0,
     )
 
     parser.add_argument(
@@ -222,6 +227,7 @@ if __name__ == "__main__":
 
         langevin = cmd_args.langevin
         sigma = cmd_args.sigma
+        target_epsilon = cmd_args.target_epsilon
         disable_dp = cmd_args.disable_dp
         dp = cmd_args.dp
         max_per_sample_grad_norm = cmd_args.max_per_sample_grad_norm

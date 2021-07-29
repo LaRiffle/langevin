@@ -23,7 +23,9 @@ def sgd_train_augmented(
     # - use Jax?
 
     # TODO: try foreach
-    # TODO: scaffolding and logs
+    # TODO: later, try torch.vmap
+
+    logger.info(f"N params: {len([p for (_, p) in model.named_parameters() if p.requires_grad])}")
 
     for batch_idx, (data, target) in enumerate(train_loader):
         start_time = time.time()
@@ -31,6 +33,7 @@ def sgd_train_augmented(
         # Initialize/clean-up accumulated microbatch grads
         # TODO: check init and update!
         # TODO: check scaling
+
         for param in [p for (_, p) in model.named_parameters() if p.requires_grad]:
             param.accumulated_microbatch_grad = torch.zeros_like(param.data)
 
