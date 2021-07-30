@@ -65,6 +65,10 @@ def alexnet(args) -> dict:
     optimizer = optim.Adam(alexnet.classifier.parameters(), lr=args.lr)
 
     # TODO: decouple models and DP training/augmentation?
+
+    # TODO: clean-up and refactor, probably in a standalone repo
+
+    transformation_list = augmentation.flip_rotate(args.data_aug_factor)
     if args.dp == "opacus":
 
         # TODO: careful with augmentation
@@ -88,7 +92,7 @@ def alexnet(args) -> dict:
         metrics["epoch_training_time"] = []
         for i in range(args.epochs):
             start_time = datetime.now()
-            sgd_train(args, alexnet, train_loader, criterion, optimizer, i)
+            sgd_train(args, alexnet, train_loader, criterion, optimizer, i, transformation_list)
             metrics["epoch_training_time"].append((datetime.now() - start_time).total_seconds())
             test_accuracy = test(args, alexnet, test_loader)
             metrics["test_accuracy"].append(test_accuracy)
@@ -115,7 +119,6 @@ def alexnet(args) -> dict:
             )
             logger.info(f"Computed sigma from epsilon: {args.sigma}")
 
-        transformation_list = augmentation.flip_rotate(args.data_aug_factor)
         metrics["test_accuracy"] = []
         metrics["epoch_training_time"] = []
 

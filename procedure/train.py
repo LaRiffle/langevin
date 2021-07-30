@@ -1,3 +1,4 @@
+import random
 import time
 from typing import Iterable
 
@@ -163,12 +164,16 @@ def sgd_train_augmented_cheap(
             )
 
 
-def sgd_train(args, model, train_loader, criterion, optimizer, epoch):
+def sgd_train(args, model, train_loader, criterion, optimizer, epoch, transformation_list):
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
         start_time = time.time()
-        data, target = data.to(args.device), target.to(args.device)
+
+        # Simple data augmentation (not using the dataloader)
+        # TODO: fix large pool of transformations and sample (feed a generator + max_nb of samples)
+        transformation = random.choice(transformation_list)
+        data, target = (transformation(data)).to(args.device), target.to(args.device)
         optimizer.zero_grad()
 
         output = model(data)
