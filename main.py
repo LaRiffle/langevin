@@ -1,9 +1,14 @@
 import argparse
 
 import torch
+from torch import nn
+import torch.optim as optim
 
-from alexnet import alexnet
-from resnet import resnet
+from loaders import cifar10, pneumonia
+from models.alexnet import alexnet
+from models.resnet import resnet
+from procedure.test import test
+from procedure.train import sgd_train
 
 
 def run(args):
@@ -12,12 +17,36 @@ def run(args):
     print("dataset:\t", args.dataset)
     print("batch_size:\t", args.batch_size)
 
-    if args.model == "resnet18":
-        resnet(args)
-    elif args.model == "alexnet":
-        alexnet(args)
+    if args.dataset == "pneumonia":
+        train_loader, test_loader = pneumonia(args)
+    elif args.dataset == "cifar10":
+        train_loader, test_loader = cifar10(args)
     else:
-        raise ValueError("")
+        raise ValueError("Unknown dataset")
+
+    criterion = nn.CrossEntropyLoss()
+
+    if args.model == "resnet18":
+        model, parameters = resnet(args)
+    elif args.model == "alexnet":
+        model, parameters = alexnet(args)
+    else:
+        raise ValueError("Unknown model")
+
+    optimizer_kwargs = dict(lr=args.lr, weight_decay=args.l2)
+    if args.optim == "sgd":
+        optimizer = optim.SGD(parameters, momentum=args.momentum, **optimizer_kwargs)
+    elif args.optim == "adam":
+        optimizer = optim.Adam(parameters, betas=(args.beta1, args.beta2), **optimizer_kwargs)
+
+    if args.scheduler:
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+
+    for epoch in range(args.epochs):
+        sgd_train(args, model, train_loader, criterion, optimizer, epoch)
+        test(args, model, test_loader)
+        if args.scheduler:
+            scheduler.step()
 
 
 if __name__ == "__main__":
