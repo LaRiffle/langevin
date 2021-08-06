@@ -19,12 +19,14 @@ def test(args, model, test_loader):
     n_items = (
         len(test_loader.dataset) if hasattr(test_loader, "dataset") else len(test_loader.labels)
     )
+    accuracy = 100.0 * correct.item() / n_items
     print(
         "\nTest set: Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \t [{:.3f}]\n".format(
             correct.item(),
             n_items,
-            100.0 * correct.item() / n_items,
+            accuracy,
             tot_time / args.test_batch_size,
             args.test_batch_size,
         )
     )
+    return accuracy

@@ -1,4 +1,6 @@
 black
+future
 pandas
+tensorboard
 torch
 torchvision

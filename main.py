@@ -1,8 +1,10 @@
 import argparse
+import datetime
 
 import torch
 from torch import nn
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
 
 from loaders import cifar10, pneumonia
 from models.alexnet import alexnet
@@ -16,6 +18,8 @@ def run(args):
     print("model:\t\t", args.model)
     print("dataset:\t", args.dataset)
     print("batch_size:\t", args.batch_size)
+
+    args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     if args.dataset == "pneumonia":
         train_loader, test_loader = pneumonia(args)
@@ -42,11 +46,19 @@ def run(args):
     if args.scheduler:
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
 
+    writer = SummaryWriter()
+
+    accuracies = []
     for epoch in range(args.epochs):
         sgd_train(args, model, train_loader, criterion, optimizer, epoch)
-        test(args, model, test_loader)
+        accuracy = test(args, model, test_loader)
+        accuracies.append(accuracy)
+        writer.add_scalar("accuracy/accuracy", accuracy, epoch)
         if args.scheduler:
             scheduler.step()
+
+    writer.add_hparams(args.hparam_dict, {"accuracy/accuracy": max(accuracies)})
+    writer.close()
 
 
 if __name__ == "__main__":
@@ -194,7 +206,10 @@ if __name__ == "__main__":
         if cmd_args.beta1 != 0.9 or cmd_args.beta2 != 0.999:
             raise ValueError("Don't set the betas if optim is not 'adam'.")
 
+    today = datetime.datetime.today()
+
     class Arguments:
+        date = f"{today.year}-{'0' if today.month < 10 else ''}{today.month}-{'0' if today.day < 10 else ''}{today.day}"
         model = cmd_args.model.lower()
         dataset = cmd_args.dataset.lower()
 
@@ -224,8 +239,14 @@ if __name__ == "__main__":
         verbose = cmd_args.verbose
         log_interval = cmd_args.log_interval
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     args = Arguments()
+
+    training_arguments = {
+        key: getattr(args, key) for key in dir(Arguments) if not key.startswith("_")
+    }
+
+    args.hparam_dict = training_arguments
+    args.metric_dict = {}
+    print(training_arguments)
 
     run(args)
