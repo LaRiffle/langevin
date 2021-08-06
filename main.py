@@ -27,14 +27,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        help="model to use for inference (alexnet, resnet18)",
+        help="model to use for inference (resnet18, alexnet)",
         default="resnet18",
     )
 
     parser.add_argument(
         "--dataset",
         type=str,
-        help="dataset to use (cifar10, pneumonia)",
+        help="dataset to use (pneumonia, cifar10)",
         default="pneumonia",
     )
 
@@ -47,20 +47,27 @@ if __name__ == "__main__":
     parser.add_argument(
         "--batch_size",
         type=int,
-        help="size of the batch to use",
-        default=64,
+        help="size of the batch to use. Default 128",
+        default=128,
     )
     parser.add_argument(
         "--test_batch_size",
         type=int,
-        help="size of the batch to use",
+        help="size of the batch to use for testing. Default: as batch_size",
         default=None,
+    )
+
+    parser.add_argument(
+        "--l2",
+        type=float,
+        help="[not with --full_train] L2 regularization to make the logistic regression strongly convex. Default 0",
+        default=0,
     )
 
     parser.add_argument(
         "--epochs",
         type=int,
-        help="[needs --train] number of epochs to train on",
+        help="[needs --train] number of epochs to train on. Default 30",
         default=30,
     )
 
@@ -74,28 +81,28 @@ if __name__ == "__main__":
     parser.add_argument(
         "--lr",
         type=float,
-        help="[needs --train] learning rate of the SGD",
+        help="[needs --train] learning rate of the SGD. Default 0.001",
         default=0.001,
     )
 
     parser.add_argument(
         "--beta1",
         type=float,
-        help="[needs --optim adam] first beta parameter for Adam optimizer. Default 0.9.",
+        help="[needs --optim adam] first beta parameter for Adam optimizer. Default 0.9",
         default=0.9,
     )
 
     parser.add_argument(
         "--beta2",
         type=float,
-        help="[needs --optim adam] first beta parameter for Adam optimizer. Default 0.999.",
+        help="[needs --optim adam] first beta parameter for Adam optimizer. Default 0.999",
         default=0.999,
     )
 
     parser.add_argument(
         "--momentum",
         type=float,
-        help="[needs --train] momentum of the SGD",
+        help="[needs --train] momentum of the SGD. Default 0",
         default=0,
     )
 
@@ -108,14 +115,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--step_size",
         type=float,
-        help="[needs --scheduler] Period of learning rate decay. Default 10.",
+        help="[needs --scheduler] Period of learning rate decay. Default 10",
         default=10,
     )
 
     parser.add_argument(
         "--gamma",
         type=float,
-        help="[needs --scheduler] Multiplicative factor of learning rate decay. Default: 0.5",
+        help="[needs --scheduler] Multiplicative factor of learning rate decay. Default 0.5",
         default=0.5,
     )
 
@@ -128,16 +135,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sigma",
         type=float,
-        help="[needs --langevin] noise for the Langevin DP",
+        help="[needs --langevin] noise for the Langevin DP. Default 0.01",
         default=0.01,
     )
 
-    parser.add_argument("--verbose", help="show extra information and metrics", action="store_true")
+    parser.add_argument(
+        "--verbose",
+        help="show extra information and metrics",
+        action="store_true",
+    )
 
     parser.add_argument(
         "--log_interval",
         type=int,
-        help="[needs --test or --train] log intermediate metrics every n batches",
+        help="[needs --test or --train] log intermediate metrics every n batches. Default 10",
         default=10,
     )
 
@@ -160,12 +171,11 @@ if __name__ == "__main__":
 
         full_train = cmd_args.full_train
 
-        # train = cmd_args.train or cmd_args.full_train
-        # test = cmd_args.test or train
-
         batch_size = cmd_args.batch_size
         # Defaults to the train batch_size
         test_batch_size = cmd_args.test_batch_size or cmd_args.batch_size
+
+        l2 = cmd_args.l2
 
         epochs = cmd_args.epochs
 
