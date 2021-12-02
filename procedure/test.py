@@ -1,32 +1,28 @@
-import time
-
 import torch
+import torch.nn.functional as F
 
 
 def test(args, model, test_loader):
     model.eval()
-    correct = 0
 
+    test_loss = 0
+    correct = 0
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(args.device), target.to(args.device)
-            start_time = time.time()
             output = model(data)
-            pred = output.argmax(dim=1)
-            tot_time = time.time() - start_time
-            correct += pred.eq(target.view_as(pred)).sum()
+            test_loss += F.nll_loss(output, target, reduction="sum").item()  # sum up batch loss
+            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            correct += pred.eq(target.view_as(pred)).sum().item()
 
-    n_items = (
-        len(test_loader.dataset) if hasattr(test_loader, "dataset") else len(test_loader.labels)
-    )
-    accuracy = 100.0 * correct.item() / n_items
+    test_loss /= len(test_loader.dataset)
+
+    accuracy = 100.0 * correct / len(test_loader.dataset)
+
     print(
-        "\nTest set: Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \t [{:.3f}]\n".format(
-            correct.item(),
-            n_items,
-            accuracy,
-            tot_time / args.test_batch_size,
-            args.test_batch_size,
+        "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.1f}%)\n".format(
+            test_loss, correct, len(test_loader.dataset), accuracy
         )
     )
+
     return accuracy

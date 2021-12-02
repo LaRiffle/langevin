@@ -19,8 +19,6 @@ def run(args):
     print("dataset:\t", args.dataset)
     print("batch_size:\t", args.batch_size)
 
-    args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     if args.dataset == "pneumonia":
         train_loader, test_loader = pneumonia(args)
     elif args.dataset == "cifar10":
@@ -28,34 +26,40 @@ def run(args):
     else:
         raise ValueError("Unknown dataset")
 
-    criterion = nn.CrossEntropyLoss()
-
     if args.model == "resnet18":
         model, parameters = resnet(args)
     elif args.model == "alexnet":
+        raise NotImplementedError
         model, parameters = alexnet(args)
     else:
         raise ValueError("Unknown model")
 
-    optimizer_kwargs = dict(lr=args.lr, weight_decay=args.l2)
+    optimizer_kwargs = dict(lr=args.lr, weight_decay=args.lambd)
     if args.optim == "sgd":
-        optimizer = optim.SGD(parameters, momentum=args.momentum, **optimizer_kwargs)
+        optimizer = optim.SGD(parameters, **optimizer_kwargs)
     elif args.optim == "adam":
+        raise NotImplementedError
         optimizer = optim.Adam(parameters, betas=(args.beta1, args.beta2), **optimizer_kwargs)
 
-    if args.scheduler:
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+    if args.dp == "renyi":
+        raise NotImplementedError
+        privacy_engine = PrivacyEngine(
+            model,
+            sample_rate=0.01,
+            alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),  # [10, 100],
+            noise_multiplier=3.0,  # Control the noise
+            max_grad_norm=1.0,
+        )
+        privacy_engine.attach(optimizer)
 
     writer = SummaryWriter()
 
     accuracies = []
     for epoch in range(args.epochs):
-        sgd_train(args, model, train_loader, criterion, optimizer, epoch)
+        sgd_train(args, model, train_loader, optimizer, epoch)
         accuracy = test(args, model, test_loader)
         accuracies.append(accuracy)
         writer.add_scalar("accuracy/accuracy", accuracy, epoch)
-        if args.scheduler:
-            scheduler.step()
 
     writer.add_hparams(args.hparam_dict, {"accuracy/accuracy": max(accuracies)})
     writer.close()
@@ -75,14 +79,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         type=str,
-        help="dataset to use (pneumonia, cifar10)",
-        default="pneumonia",
-    )
-
-    parser.add_argument(
-        "--full_train",
-        help="Train *all* the layers",
-        action="store_true",
+        help="dataset to use (cifar10, pneumonia).",
+        default="cifar10",
     )
 
     parser.add_argument(
@@ -96,13 +94,6 @@ if __name__ == "__main__":
         type=int,
         help="size of the batch to use for testing. Default: as batch_size",
         default=None,
-    )
-
-    parser.add_argument(
-        "--l2",
-        type=float,
-        help="[not with --full_train] L2 regularization to make the logistic regression strongly convex. Default 0",
-        default=0,
     )
 
     parser.add_argument(
@@ -122,62 +113,48 @@ if __name__ == "__main__":
     parser.add_argument(
         "--lr",
         type=float,
-        help="[needs --train] learning rate of the SGD. Default 0.001",
-        default=0.001,
-    )
-
-    parser.add_argument(
-        "--beta1",
-        type=float,
-        help="[needs --optim adam] first beta parameter for Adam optimizer. Default 0.9",
-        default=0.9,
-    )
-
-    parser.add_argument(
-        "--beta2",
-        type=float,
-        help="[needs --optim adam] first beta parameter for Adam optimizer. Default 0.999",
-        default=0.999,
-    )
-
-    parser.add_argument(
-        "--momentum",
-        type=float,
-        help="[needs --train] momentum of the SGD. Default 0",
-        default=0,
-    )
-
-    parser.add_argument(
-        "--scheduler",
-        help="Use a scheduler for the learning rate",
-        action="store_true",
-    )
-
-    parser.add_argument(
-        "--step_size",
-        type=float,
-        help="[needs --scheduler] Period of learning rate decay. Default 10",
-        default=10,
-    )
-
-    parser.add_argument(
-        "--gamma",
-        type=float,
-        help="[needs --scheduler] Multiplicative factor of learning rate decay. Default 0.5",
-        default=0.5,
+        help="[needs --train] learning rate of the SGD. Default ???",
+        default=0.0088,
     )
 
     parser.add_argument(
         "--langevin",
-        help="Activate Langevin DP SGD",
+        help="Use Langevin DP SGD",
         action="store_true",
+    )
+
+    parser.add_argument(
+        "--renyi",
+        help="Use Renyi DP SGD and Opacus",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--delta",
+        type=float,
+        help="delta constant in the DP budget. Default 1e-5",
+        default=1e-5,
+    )
+
+    parser.add_argument(
+        "--lambd",
+        type=float,
+        help="L2 regularization to make the logistic regression strongly convex. Default 0.01",
+        default=0.01,
+    )
+
+    parser.add_argument(
+        "--beta",
+        type=float,
+        help="[needs --optim adam] Smoothness constant estimation. Default 110.",
+        default=110,
     )
 
     parser.add_argument(
         "--sigma",
         type=float,
-        help="[needs --langevin] noise for the Langevin DP. Default 0.01",
-        default=0.01,
+        help="Noise for the Langevin DP. Default 0.001",
+        default=0.001,
     )
 
     parser.add_argument(
@@ -189,52 +166,50 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_interval",
         type=int,
-        help="[needs --test or --train] log intermediate metrics every n batches. Default 10",
-        default=10,
+        help="Log intermediate metrics every n batches. Default 100",
+        default=100,
     )
 
     cmd_args = parser.parse_args()
 
-    if cmd_args.langevin:
-        if cmd_args.momentum != 0:
-            print("WARNING: With DPSGD, momentum should be 0!")
-
-    if cmd_args.optim == "adam":
-        if cmd_args.momentum != 0:
-            raise ValueError("With Adam optimizer, momentum should not be set.")
-    else:
-        if cmd_args.beta1 != 0.9 or cmd_args.beta2 != 0.999:
-            raise ValueError("Don't set the betas if optim is not 'adam'.")
-
     today = datetime.datetime.today()
 
     class Arguments:
+        seed = 1
         date = f"{today.year}-{'0' if today.month < 10 else ''}{today.month}-{'0' if today.day < 10 else ''}{today.day}"
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
         model = cmd_args.model.lower()
         dataset = cmd_args.dataset.lower()
-
-        full_train = cmd_args.full_train
+        n = -1  # size of the data (is set later when loading the data)
+        if dataset == "cifar10":
+            out_features = 10
+        elif dataset == "pneunomia":
+            out_features = 3
+        else:
+            raise ValueError(f"Dataset {dataset} is not recognized.")
 
         batch_size = cmd_args.batch_size
-        # Defaults to the train batch_size
         test_batch_size = cmd_args.test_batch_size or cmd_args.batch_size
-
-        l2 = cmd_args.l2
-
         epochs = cmd_args.epochs
-
         optim = cmd_args.optim
         lr = cmd_args.lr
-        momentum = cmd_args.momentum
-        beta1 = cmd_args.beta1
-        beta2 = cmd_args.beta2
 
-        scheduler = cmd_args.scheduler
-        step_size = cmd_args.step_size
-        gamma = cmd_args.gamma
+        if cmd_args.langevin:
+            dp = "langevin"
+        elif cmd_args.renyi:
+            dp = "renyi"
+        else:
+            dp = False
+        print("DP Status:", dp)
 
-        langevin = cmd_args.langevin
-        sigma = cmd_args.sigma
+        delta = cmd_args.delta
+        alphas = range(1, 2000)
+        L = 1  # sensitivity of the total gradients: \sum_x_i \grad
+        lambd = cmd_args.lambd  # λ-strong convexity of the loss function
+        beta = cmd_args.beta  # β-smoothness of the loss function
+        sigma = cmd_args.sigma  # Gaussian noise is N(0, 2.σ^2/λ)
+        eta = lr
 
         verbose = cmd_args.verbose
         log_interval = cmd_args.log_interval
