@@ -4,3 +4,4 @@ pandas
 tensorboard
 torch
 torchvision
+typer
