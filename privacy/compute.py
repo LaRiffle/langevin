@@ -16,7 +16,7 @@ def get_privacy_spent(args, epoch):
     """
     K = epoch
     L = args.L
-    n = args.n
+    n = args.n_train
     beta = args.beta
     delta = args.delta
     eta = args.eta  # == lr
