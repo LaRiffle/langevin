@@ -5,16 +5,15 @@ from torch import nn
 from privacy.compute import get_privacy_spent
 
 
-def sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch):
-    model.train()
+def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
+    classifier.train()
     # TODO clean
-    classifier = model.fc if args.model == "resnet" else model.classifier
     loss_fn = nn.CrossEntropyLoss()
     losses = []
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(args.device), target.to(args.device)
         optimizer.zero_grad()
-        output = model(data)
+        output = classifier(data)
 
         loss = loss_fn(output, target)
         loss.backward()

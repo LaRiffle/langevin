@@ -5,3 +5,4 @@ pandas
 tensorboard
 torch
 torchvision
+tqdm

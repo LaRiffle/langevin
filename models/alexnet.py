@@ -2,8 +2,6 @@ import torch
 import torchvision
 from torch import nn
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 
 class Empty(nn.Module):
     def __init__(self):
@@ -17,8 +15,6 @@ def alexnet(args):
     assert (
         args.dataset == "cifar10"
     ), "Alexnet does not support this dataset for the moment."  # nosec
-
-    # alexnet = torchvision.models.alexnet(pretrained=True)
 
     class AlexNet(nn.Module):
         def __init__(self, num_classes=100):
@@ -52,20 +48,26 @@ def alexnet(args):
     state_dict = torch.load(path, map_location=args.device)
     alexnet.load_state_dict(state_dict)
 
-    for param in alexnet.features.parameters():
+    alexnet.classifier = Empty()
+
+    for param in alexnet.parameters():
         param.requires_grad = False
 
+    # alexnet = torchvision.models.alexnet(pretrained=True)
     # alexnet.avgpool = Empty()
-    #
     # alexnet.classifier = nn.Linear(256, 10)
-    #
     # # Adaptation to support CIFAR10
     # alexnet.features[0].padding = (10, 10)
     # alexnet.features[3].padding = (1, 1)
     # alexnet.features[12] = Empty()  # remove last MaxPool
 
+    classifier = nn.Linear(in_features=256, out_features=args.out_features)
+    # Put the appropriate Langevin initialization of the weights: theta_0 ~ proj( N(0, 2 sigma^2 / lambda) )
+    std = 2 * args.sigma ** 2 / args.lambd
+    nn.init.normal_(classifier.weight, mean=0.0, std=std)
+    nn.init.normal_(classifier.bias, mean=0.0, std=std)
+
     alexnet.to(args.device)
+    classifier.to(args.device)
 
-    parameters = alexnet.classifier.parameters()
-
-    return alexnet, parameters
+    return alexnet, classifier

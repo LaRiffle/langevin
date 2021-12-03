@@ -11,6 +11,7 @@ from models.alexnet import alexnet
 from models.resnet import resnet
 from procedure.test import test
 from procedure.train import sgd_train
+from procedure.features import compute_features
 
 
 def run(args):
@@ -20,6 +21,13 @@ def run(args):
     print("dataset:\t", args.dataset)
     print("batch_size:\t", args.batch_size)
 
+    if args.model == "resnet18":
+        feature_extractor, classifier = resnet(args)
+    elif args.model == "alexnet":
+        feature_extractor, classifier = alexnet(args)
+    else:
+        raise ValueError(f"Unknown model {args.model}")
+
     if args.dataset == "pneumonia":
         train_loader, test_loader = pneumonia(args)
     elif args.dataset == "cifar10":
@@ -27,23 +35,21 @@ def run(args):
     else:
         raise ValueError("Unknown dataset")
 
-    if args.model == "resnet18":
-        model, parameters = resnet(args)
-    elif args.model == "alexnet":
-        model, parameters = alexnet(args)
-    else:
-        raise ValueError(f"Unknown model {args.model}")
+    # Compute the features once to be more efficient
+    train_loader, test_loader = compute_features(args, feature_extractor, train_loader, test_loader)
 
     optimizer_kwargs = dict(lr=args.lr, weight_decay=args.lambd)
     if args.optim == "sgd":
-        optimizer = optim.SGD(parameters, **optimizer_kwargs)
+        optimizer = optim.SGD(classifier.parameters(), **optimizer_kwargs)
     elif args.optim == "adam":
         raise NotImplementedError
-        optimizer = optim.Adam(parameters, betas=(args.beta1, args.beta2), **optimizer_kwargs)
+        optimizer = optim.Adam(
+            classifier.parameters(), betas=(args.beta1, args.beta2), **optimizer_kwargs
+        )
 
     if args.dp == "renyi":
         privacy_engine = PrivacyEngine(
-            model,
+            classifier,
             sample_rate=0.01,
             alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),  # [10, 100],
             noise_multiplier=3.0,  # Control the noise
@@ -67,13 +73,12 @@ def run(args):
 
     accuracies = []
     for epoch in range(args.epochs):
-        sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch)
-        accuracy = test(args, model, test_loader)
+        sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch)
+        accuracy = test(args, classifier, test_loader)
         accuracies.append(accuracy)
         writer.add_scalar("accuracy/accuracy", accuracy, epoch)
 
-    print(type(max(accuracies)))
-    writer.add_hparams(args.hparam_dict, {"accuracy/accuracy": max(accuracies)})
+    print("Best accuracy", max(accuracies))
     writer.close()
 
 
