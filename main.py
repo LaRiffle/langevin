@@ -15,7 +15,7 @@ from procedure.train import sgd_train
 
 def run(args):
     print(f"Training over {args.epochs} epochs")
-    print("with DP:", args.dp)
+    print("with DP:\t", args.dp)
     print("model:\t\t", args.model)
     print("dataset:\t", args.dataset)
     print("batch_size:\t", args.batch_size)

@@ -21,7 +21,7 @@ def test(args, model, test_loader):
 
     print(
         "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.1f}%)\n".format(
-            test_loss, correct, len(test_loader.dataset), accuracy
+            test_loss, correct, args.n_test, accuracy
         )
     )
 
