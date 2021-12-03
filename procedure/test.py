@@ -15,9 +15,9 @@ def test(args, model, test_loader):
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
-    test_loss /= len(test_loader.dataset)
+    test_loss /= args.n_test
 
-    accuracy = 100.0 * correct / len(test_loader.dataset)
+    accuracy = 100.0 * correct / args.n_test
 
     print(
         "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.1f}%)\n".format(

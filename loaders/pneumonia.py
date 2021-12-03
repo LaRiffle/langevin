@@ -19,7 +19,7 @@ def single_channel_loader(filename):
 class PneumoniaDataset(th.utils.data.Dataset):
     def __init__(
         self,
-        label_path="../PriMIA/data/Labels.csv",
+        label_path="./data/pneumonia/Labels.csv",
         train=False,
         transform=None,
         batch_size=8,
@@ -48,7 +48,7 @@ class PneumoniaDataset(th.utils.data.Dataset):
             folder = {0: "normal", 1: "bacterial pneumonia", 2: "viral pneumonia"}[
                 row["Numeric_Label"]
             ]
-            full_path = os.path.join("../PriMIA/data", path, folder, row["X_ray_image_name"])
+            full_path = os.path.join("./data/pneumonia", path, folder, row["X_ray_image_name"])
             img = single_channel_loader(full_path)
             if self.transform:
                 img = self.transform(img)
@@ -64,6 +64,7 @@ class PneumoniaDataset(th.utils.data.Dataset):
 
 
 def pneumonia(args):
+
     transform = transforms.Compose(
         [
             transforms.Resize(256),
@@ -75,5 +76,8 @@ def pneumonia(args):
 
     train_loader = PneumoniaDataset(train=True, transform=transform, batch_size=args.batch_size)
     test_loader = PneumoniaDataset(train=False, transform=transform, batch_size=args.batch_size)
+
+    args.n_train = len(train_loader.labels)
+    args.n_test = len(test_loader.labels)
 
     return train_loader, test_loader

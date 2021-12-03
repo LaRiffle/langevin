@@ -41,8 +41,8 @@ def sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch):
                 "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                     epoch,
                     batch_idx * len(data),
-                    len(train_loader.dataset),
-                    100.0 * batch_idx / len(train_loader),
+                    args.n_train,
+                    100.0 * batch_idx * args.batch_size / args.n_train,
                     loss.item(),
                 )
             )

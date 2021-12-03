@@ -15,6 +15,7 @@ from procedure.train import sgd_train
 
 def run(args):
     print(f"Training over {args.epochs} epochs")
+    print("with DP:", args.dp)
     print("model:\t\t", args.model)
     print("dataset:\t", args.dataset)
     print("batch_size:\t", args.batch_size)
@@ -200,10 +201,11 @@ if __name__ == "__main__":
 
         model = cmd_args.model.lower()
         dataset = cmd_args.dataset.lower()
-        n = -1  # size of the data (is set later when loading the data)
+        n_train = -1  # size of the train data (is set later when loading the data)
+        n_test = -1  # size of the test data (is set later when loading the data)
         if dataset == "cifar10":
             out_features = 10
-        elif dataset == "pneunomia":
+        elif dataset == "pneumonia":
             out_features = 3
         else:
             raise ValueError(f"Dataset {dataset} is not recognized.")
@@ -220,7 +222,6 @@ if __name__ == "__main__":
             dp = "renyi"
         else:
             dp = False
-        print("DP Status:", dp)
 
         delta = cmd_args.delta
         alphas = range(1, 2000)
