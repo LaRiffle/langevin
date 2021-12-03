@@ -74,7 +74,7 @@ def run(args):
     accuracies = []
     for epoch in range(args.epochs):
         sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch)
-        accuracy = test(args, classifier, test_loader)
+        accuracy = test(args, classifier, test_loader, epoch)
         accuracies.append(accuracy)
         writer.add_scalar("accuracy/accuracy", accuracy, epoch)
 
@@ -191,7 +191,13 @@ if __name__ == "__main__":
         "--log_interval",
         type=int,
         help="Log intermediate metrics every n batches. Default 100",
-        default=100,
+        default=1000,
+    )
+
+    parser.add_argument(
+        "--compute_features_force",
+        help="Force computation of the features even if already computed",
+        action="store_true",
     )
 
     cmd_args = parser.parse_args()
@@ -237,6 +243,7 @@ if __name__ == "__main__":
 
         verbose = cmd_args.verbose
         log_interval = cmd_args.log_interval
+        compute_features_force = cmd_args.compute_features_force # Recompute the features
 
     args = Arguments()
 

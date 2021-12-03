@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 
-def test(args, classifier, test_loader):
+def test(args, classifier, test_loader, epoch):
     classifier.eval()
 
     test_loss = 0
@@ -20,8 +20,8 @@ def test(args, classifier, test_loader):
     accuracy = 100.0 * correct / args.n_test
 
     print(
-        "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.1f}%)\n".format(
-            test_loss, correct, args.n_test, accuracy
+        "Epoch {} : Test Accuracy: {}/{} ({:.1f}%)".format(
+            epoch, correct, args.n_test, accuracy
         )
     )
 

@@ -44,7 +44,7 @@ def alexnet(args):
 
     alexnet = AlexNet()
 
-    path = "data/20211007-alexnet-cifar100-epoch-100.pt"
+    path = "data/20211203-alexnet-cifar100-best-model-42.96.pt"
     state_dict = torch.load(path, map_location=args.device)
     alexnet.load_state_dict(state_dict)
 

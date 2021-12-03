@@ -37,7 +37,7 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
             pass
 
         losses.append(loss.item())
-        if batch_idx % args.log_interval == 0:
+        if (batch_idx + 1) % args.log_interval == 0:
             print(
                 "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                     epoch,
@@ -55,10 +55,14 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
         # epsilon, best_alpha = privacy_engine.accountant.get_privacy_spent(delta=args.delta, alphas=args.alphas)
         epsilon, best_alpha = optimizer.privacy_engine.get_privacy_spent(args.delta)
 
-    print(
-        f"Train Epoch: {epoch} \t"
-        f"Loss: {np.mean(losses):.6f} "
-        f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {best_alpha}"
-        if args.dp
-        else ""
-    )
+    if args.dp:
+        print(
+            f"Epoch {epoch} : "
+            f"Train  Loss: {np.mean(losses):.6f} "
+            f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {best_alpha}"
+        )
+    else:
+        print(
+            f"Epoch {epoch} : "
+            f"Train  Loss: {np.mean(losses):.6f} "
+        )
