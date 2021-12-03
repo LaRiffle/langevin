@@ -7,6 +7,8 @@ from privacy.compute import get_privacy_spent
 
 def sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch):
     model.train()
+    # TODO clean
+    classifier = model.fc if args.model == "resnet" else model.classifier
     loss_fn = nn.CrossEntropyLoss()
     losses = []
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -19,7 +21,7 @@ def sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch):
 
         # Clip the gradient to ensure L-lipschitz
         if args.dp is not False:
-            for param in model.fc.parameters():
+            for param in classifier.parameters():
                 clipped_grad = torch.clip(param.grad, -args.L, args.L)
                 param.grad = clipped_grad
 
@@ -29,7 +31,7 @@ def sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch):
         if args.dp == "langevin":
             factor = torch.tensor(2 * args.lr * args.sigma ** 2).sqrt()
             with torch.no_grad():
-                for param in model.fc.parameters():
+                for param in classifier.parameters():
                     param += (factor * torch.randn(param.shape)).to(args.device)
 
         elif args.dp == "renyi":
@@ -48,7 +50,7 @@ def sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch):
             )
 
     if args.dp == "langevin":
-        epsilon, best_alpha = get_privacy_spent(args, epoch)
+        epsilon, best_alpha = get_privacy_spent(args, epoch + 1)
     elif args.dp == "renyi":
         # TODO: support Opacus 1.0
         # epsilon, best_alpha = privacy_engine.accountant.get_privacy_spent(delta=args.delta, alphas=args.alphas)

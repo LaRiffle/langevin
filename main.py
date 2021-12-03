@@ -30,10 +30,9 @@ def run(args):
     if args.model == "resnet18":
         model, parameters = resnet(args)
     elif args.model == "alexnet":
-        raise NotImplementedError
         model, parameters = alexnet(args)
     else:
-        raise ValueError("Unknown model")
+        raise ValueError(f"Unknown model {args.model}")
 
     optimizer_kwargs = dict(lr=args.lr, weight_decay=args.lambd)
     if args.optim == "sgd":

@@ -38,6 +38,7 @@ def cifar10(args):
         test_set, batch_size=args.test_batch_size, shuffle=True
     )
 
-    args.n = len(train_loader.dataset)
+    args.n_train = len(train_loader.dataset)
+    args.n_test = len(test_loader.dataset)
 
     return train_loader, test_loader
