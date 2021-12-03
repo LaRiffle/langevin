@@ -1,5 +1,6 @@
 black
 future
+opacus==0.15
 pandas
 tensorboard
 torch

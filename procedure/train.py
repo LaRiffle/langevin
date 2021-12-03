@@ -5,7 +5,7 @@ from torch import nn
 from privacy.compute import get_privacy_spent
 
 
-def sgd_train(args, model, train_loader, optimizer, epoch):
+def sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch):
     model.train()
     loss_fn = nn.CrossEntropyLoss()
     losses = []
@@ -33,7 +33,7 @@ def sgd_train(args, model, train_loader, optimizer, epoch):
                     param += (factor * torch.randn(param.shape)).to(args.device)
 
         elif args.dp == "renyi":
-            raise NotImplementedError
+            pass
 
         losses.append(loss.item())
         if batch_idx % args.log_interval == 0:
@@ -47,8 +47,13 @@ def sgd_train(args, model, train_loader, optimizer, epoch):
                 )
             )
 
-    if args.dp:
+    if args.dp == "langevin":
         epsilon, best_alpha = get_privacy_spent(args, epoch)
+    elif args.dp == "renyi":
+        # TODO: support Opacus 1.0
+        # epsilon, best_alpha = privacy_engine.accountant.get_privacy_spent(delta=args.delta, alphas=args.alphas)
+        epsilon, best_alpha = optimizer.privacy_engine.get_privacy_spent(args.delta)
+
     print(
         f"Train Epoch: {epoch} \t"
         f"Loss: {np.mean(losses):.6f} "

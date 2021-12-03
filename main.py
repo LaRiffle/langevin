@@ -1,8 +1,8 @@
 import argparse
 import datetime
 
+from opacus import PrivacyEngine
 import torch
-from torch import nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
@@ -42,7 +42,6 @@ def run(args):
         optimizer = optim.Adam(parameters, betas=(args.beta1, args.beta2), **optimizer_kwargs)
 
     if args.dp == "renyi":
-        raise NotImplementedError
         privacy_engine = PrivacyEngine(
             model,
             sample_rate=0.01,
@@ -52,15 +51,28 @@ def run(args):
         )
         privacy_engine.attach(optimizer)
 
+        # TODO: support Opacus 1.0
+        # privacy_engine = PrivacyEngine()
+        # model, optimizer, data_loader = privacy_engine.make_private(
+        #     module=model.fc,
+        #     optimizer=optimizer,
+        #     data_loader=train_loader,
+        #     noise_multiplier=1.1,
+        #     max_grad_norm=1.0,
+        # )
+    else:
+        privacy_engine = None
+
     writer = SummaryWriter()
 
     accuracies = []
     for epoch in range(args.epochs):
-        sgd_train(args, model, train_loader, optimizer, epoch)
+        sgd_train(args, model, train_loader, optimizer, privacy_engine, epoch)
         accuracy = test(args, model, test_loader)
         accuracies.append(accuracy)
         writer.add_scalar("accuracy/accuracy", accuracy, epoch)
 
+    print(type(max(accuracies)))
     writer.add_hparams(args.hparam_dict, {"accuracy/accuracy": max(accuracies)})
     writer.close()
 
@@ -155,6 +167,13 @@ if __name__ == "__main__":
         type=float,
         help="Noise for the Langevin DP. Default 0.001",
         default=0.001,
+    )
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Seed. Default 1",
+        default=1,
     )
 
     parser.add_argument(
