@@ -53,14 +53,6 @@ def alexnet(args):
     for param in alexnet.parameters():
         param.requires_grad = False
 
-    # alexnet = torchvision.models.alexnet(pretrained=True)
-    # alexnet.avgpool = Empty()
-    # alexnet.classifier = nn.Linear(256, 10)
-    # # Adaptation to support CIFAR10
-    # alexnet.features[0].padding = (10, 10)
-    # alexnet.features[3].padding = (1, 1)
-    # alexnet.features[12] = Empty()  # remove last MaxPool
-
     classifier = nn.Linear(in_features=256, out_features=args.out_features)
     # Put the appropriate Langevin initialization of the weights: theta_0 ~ proj( N(0, 2 sigma^2 / lambda) )
     std = 2 * args.sigma ** 2 / args.lambd
@@ -69,5 +61,7 @@ def alexnet(args):
 
     alexnet.to(args.device)
     classifier.to(args.device)
+
+    alexnet.eval()
 
     return alexnet, classifier

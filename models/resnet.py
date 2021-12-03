@@ -36,4 +36,6 @@ def resnet(args):
     resnet.to(args.device)
     classifier.to(args.device)
 
+    resnet.eval()
+
     return resnet, classifier

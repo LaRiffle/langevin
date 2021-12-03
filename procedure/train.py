@@ -7,7 +7,7 @@ from privacy.compute import get_privacy_spent
 
 def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
     classifier.train()
-    # TODO clean
+
     loss_fn = nn.CrossEntropyLoss()
     losses = []
     for batch_idx, (data, target) in enumerate(train_loader):
