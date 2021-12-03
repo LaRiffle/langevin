@@ -243,7 +243,7 @@ if __name__ == "__main__":
 
         verbose = cmd_args.verbose
         log_interval = cmd_args.log_interval
-        compute_features_force = cmd_args.compute_features_force # Recompute the features
+        compute_features_force = cmd_args.compute_features_force  # Recompute the features
 
     args = Arguments()
 

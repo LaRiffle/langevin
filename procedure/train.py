@@ -62,7 +62,4 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
             f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {best_alpha}"
         )
     else:
-        print(
-            f"Epoch {epoch} : "
-            f"Train  Loss: {np.mean(losses):.6f} "
-        )
+        print(f"Epoch {epoch} : Train  Loss: {np.mean(losses):.6f}")

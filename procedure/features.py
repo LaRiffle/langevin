@@ -11,7 +11,7 @@ def compute_features(args, feature_extractor, train_loader, test_loader):
         try:
             with open(file_path, "rb") as file:
                 feature_train_loader, feature_test_loader = pickle.load(file)
-            print('Features loaded!')
+            print("Features loaded!")
             return feature_train_loader, feature_test_loader
         except FileNotFoundError:
             pass
