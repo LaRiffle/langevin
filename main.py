@@ -56,7 +56,7 @@ def run(args):
             noise_multiplier=args.noise_multiplier,
             max_grad_norm=args.L,
         )
-    if args.dp == "langevin":
+    elif args.dp == "langevin":
         # The Opacus privacy engine is used to clip properly the gradients, but no noise is added
         privacy_engine = PrivacyEngine()
         model, optimizer, data_loader = privacy_engine.make_private(
@@ -66,6 +66,8 @@ def run(args):
             noise_multiplier=0,  # The noise is added separately using the Langevin approach
             max_grad_norm=args.L,
         )
+    else:
+        privacy_engine = None
 
     writer = SummaryWriter()
 
@@ -128,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--lr",
         type=float,
-        help="[needs --train] learning rate of the SGD. Default ???",
+        help="[needs --train] learning rate of the SGD. Default 0.0088",
         default=0.0088,
     )
 
@@ -168,8 +170,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sigma",
         type=float,
-        help="[needs --langevin] Gaussian noise variance defined as std = sqrt(2.σ^2/λ). Default 0.001",
-        default=0.001,
+        help="[needs --langevin] Gaussian noise variance defined as std = sqrt(2.σ^2/λ). Default 0.002",
+        default=0.002,
     )
 
     parser.add_argument(
@@ -182,8 +184,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max_grad_norm",
         type=float,
-        help="Maximum gradient norm per sample. Default 3",
-        default=3,
+        help="Maximum gradient norm per sample. Default 20",
+        default=20,
     )
 
     parser.add_argument(
