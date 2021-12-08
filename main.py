@@ -48,26 +48,24 @@ def run(args):
         )
 
     if args.dp == "renyi":
-        privacy_engine = PrivacyEngine(
-            classifier,
-            sample_rate=0.01,
-            alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),  # [10, 100],
-            noise_multiplier=3.0,  # Control the noise
-            max_grad_norm=1.0,
+        privacy_engine = PrivacyEngine()
+        model, optimizer, data_loader = privacy_engine.make_private(
+            module=classifier,
+            optimizer=optimizer,
+            data_loader=train_loader,
+            noise_multiplier=args.noise_multiplier,
+            max_grad_norm=args.L,
         )
-        privacy_engine.attach(optimizer)
-
-        # TODO: support Opacus 1.0
-        # privacy_engine = PrivacyEngine()
-        # model, optimizer, data_loader = privacy_engine.make_private(
-        #     module=model.fc,
-        #     optimizer=optimizer,
-        #     data_loader=train_loader,
-        #     noise_multiplier=1.1,
-        #     max_grad_norm=1.0,
-        # )
-    else:
-        privacy_engine = None
+    if args.dp == "langevin":
+        # The Opacus privacy engine is used to clip properly the gradients, but no noise is added
+        privacy_engine = PrivacyEngine()
+        model, optimizer, data_loader = privacy_engine.make_private(
+            module=classifier,
+            optimizer=optimizer,
+            data_loader=train_loader,
+            noise_multiplier=0,  # The noise is added separately using the Langevin approach
+            max_grad_norm=args.L,
+        )
 
     writer = SummaryWriter()
 
@@ -170,8 +168,22 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sigma",
         type=float,
-        help="Noise for the Langevin DP. Default 0.001",
+        help="[needs --langevin] Gaussian noise variance defined as std = sqrt(2.σ^2/λ). Default 0.001",
         default=0.001,
+    )
+
+    parser.add_argument(
+        "--noise_multiplier",
+        type=float,
+        help="[needs --renyi] Gaussian noise variance defined as std = noise_multiplier * max_grad_norm. Default 1.2",
+        default=1.2,
+    )
+
+    parser.add_argument(
+        "--max_grad_norm",
+        type=float,
+        help="Maximum gradient norm per sample. Default 3",
+        default=3,
     )
 
     parser.add_argument(
@@ -235,10 +247,13 @@ if __name__ == "__main__":
 
         delta = cmd_args.delta
         alphas = range(1, 2000)
-        L = 1  # sensitivity of the total gradients: \sum_x_i \grad
+        L = cmd_args.max_grad_norm  # sensitivity of the loss function wrt one sample
         lambd = cmd_args.lambd  # λ-strong convexity of the loss function
         beta = cmd_args.beta  # β-smoothness of the loss function
-        sigma = cmd_args.sigma  # Gaussian noise is N(0, 2.σ^2/λ)
+        sigma = cmd_args.sigma  # [Langevin] Gaussian noise is N(0, 2.σ^2/λ)
+        noise_multiplier = (
+            cmd_args.noise_multiplier
+        )  # [Renyi] Gaussian noise std is noise_multiplier * L
         eta = lr
 
         verbose = cmd_args.verbose

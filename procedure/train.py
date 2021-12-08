@@ -18,12 +18,8 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
         loss = loss_fn(output, target)
         loss.backward()
 
-        # Clip the gradient to ensure L-lipschitz
-        if args.dp is not False:
-            for param in classifier.parameters():
-                clipped_grad = torch.clip(param.grad, -args.L, args.L)
-                param.grad = clipped_grad
-
+        # The gradients are clipped properly thanks to the privacy engine and the
+        # wrapper around the optimizer
         optimizer.step()
 
         # Add the proper noise depending on the DP method
@@ -32,9 +28,6 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
             with torch.no_grad():
                 for param in classifier.parameters():
                     param += (factor * torch.randn(param.shape)).to(args.device)
-
-        elif args.dp == "renyi":
-            pass
 
         losses.append(loss.item())
         if (batch_idx + 1) % args.log_interval == 0:
@@ -51,9 +44,10 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
     if args.dp == "langevin":
         epsilon, best_alpha = get_privacy_spent(args, epoch + 1)
     elif args.dp == "renyi":
-        # TODO: support Opacus 1.0
-        # epsilon, best_alpha = privacy_engine.accountant.get_privacy_spent(delta=args.delta, alphas=args.alphas)
-        epsilon, best_alpha = optimizer.privacy_engine.get_privacy_spent(args.delta)
+        alphas = [1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64))
+        epsilon, best_alpha = privacy_engine.accountant.get_privacy_spent(
+            delta=args.delta, alphas=alphas
+        )
 
     if args.dp:
         print(

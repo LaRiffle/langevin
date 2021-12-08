@@ -29,9 +29,7 @@ def get_privacy_spent(args, epoch):
     epsilons = []
     for alpha in alphas:
         epsilon_renyi = (
-            4
-            * alpha
-            * L ** 2
+            (4 * alpha * L ** 2)
             / (lambd * sigma ** 2 * n ** 2)
             * (1 - np.exp(-lambd * eta * K / 2).item())
         )
