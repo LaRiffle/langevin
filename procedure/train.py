@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from privacy.compute import get_privacy_spent
+from compute.privacy import get_privacy_spent
 
 
 def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
@@ -30,7 +30,7 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
                     param += (factor * torch.randn(param.shape)).to(args.device)
 
         losses.append(loss.item())
-        if (batch_idx + 1) % args.log_interval == 0:
+        if not args.silent and (batch_idx + 1) % args.log_interval == 0:
             print(
                 "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                     epoch,
@@ -49,11 +49,14 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
             delta=args.delta, alphas=alphas
         )
 
-    if args.dp:
-        print(
-            f"Epoch {epoch} : "
-            f"Train  Loss: {np.mean(losses):.6f} "
-            f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {best_alpha}"
-        )
-    else:
-        print(f"Epoch {epoch} : Train  Loss: {np.mean(losses):.6f}")
+    if not args.silent:
+        if args.dp:
+            print(
+                f"Epoch {epoch} : "
+                f"Train  Loss: {np.mean(losses):.6f} "
+                f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {best_alpha}"
+            )
+        else:
+            print(f"Epoch {epoch} : Train  Loss: {np.mean(losses):.6f}")
+
+    return epsilon if args.dp else None

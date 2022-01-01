@@ -4,7 +4,7 @@ import torch as th
 
 def get_privacy_spent(args, epoch):
     """
-    Computes the (epsilon, delta) privacy budget spent so far.
+    Computes the (epsilon, delta) privacy budget spent so far for Langevin DP.
 
     This method converts from an (alpha, epsilon)-DP guarantee for all alphas
     that the PrivacyEngine was initialized with. It returns the optimal alpha
@@ -19,7 +19,7 @@ def get_privacy_spent(args, epoch):
     n = args.n_train
     beta = args.beta
     delta = args.delta
-    eta = args.eta  # == lr
+    eta = args.lr
     lambd = args.lambd
     sigma = args.sigma
     alphas = args.alphas

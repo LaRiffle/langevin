@@ -19,6 +19,11 @@ def test(args, classifier, test_loader, epoch):
 
     accuracy = 100.0 * correct / args.n_test
 
-    print("Epoch {} : Test Accuracy: {}/{} ({:.1f}%)".format(epoch, correct, args.n_test, accuracy))
+    if not args.silent:
+        print(
+            "Epoch {} : Test Accuracy: {}/{} ({:.1f}%)".format(
+                epoch, correct, args.n_test, accuracy
+            )
+        )
 
     return accuracy

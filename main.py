@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import math
 
 from opacus import PrivacyEngine
 import torch
@@ -15,11 +16,12 @@ from procedure.features import compute_features
 
 
 def run(args):
-    print(f"Training over {args.epochs} epochs")
-    print("with DP:\t", args.dp)
-    print("model:\t\t", args.model)
-    print("dataset:\t", args.dataset)
-    print("batch_size:\t", args.batch_size)
+    if not args.silent:
+        print(f"Training over {args.epochs} epochs")
+        print("with DP:\t", args.dp)
+        print("model:\t\t", args.model)
+        print("dataset:\t", args.dataset)
+        print("batch_size:\t", args.batch_size)
 
     if args.model == "resnet18":
         feature_extractor, classifier = resnet(args)
@@ -37,6 +39,13 @@ def run(args):
 
     # Compute the features once to be more efficient
     train_loader, test_loader = compute_features(args, feature_extractor, train_loader, test_loader)
+
+    # Auto set the lr to 1 / beta if needed (beta can only be accessed now)
+    if args.lr == -1:
+        multiplier = 10 ** 4
+        args.lr = int(1 / args.beta * multiplier) / multiplier
+        if not args.silent:
+            print(f"AUTO: lr set to 1 / beta = {args.lr}")
 
     optimizer_kwargs = dict(lr=args.lr, weight_decay=args.lambd)
     if args.optim == "sgd":
@@ -73,13 +82,17 @@ def run(args):
 
     accuracies = []
     for epoch in range(args.epochs):
-        sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch)
+        epsilon = sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch)
         accuracy = test(args, classifier, test_loader, epoch)
         accuracies.append(accuracy)
         writer.add_scalar("accuracy/accuracy", accuracy, epoch)
 
-    print("Best accuracy", max(accuracies))
+    best_accuracy = round(max(accuracies), 2)
+    if not args.silent:
+        print("Best accuracy", best_accuracy)
     writer.close()
+
+    return args.epochs, epsilon, best_accuracy
 
 
 if __name__ == "__main__":
@@ -130,8 +143,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--lr",
         type=float,
-        help="[needs --train] learning rate of the SGD. Default 0.0088",
-        default=0.0088,
+        help="[needs --train] learning rate of the SGD. Default 1 / beta.",
+        default=-1,
     )
 
     parser.add_argument(
@@ -196,8 +209,8 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--verbose",
-        help="show extra information and metrics",
+        "--silent",
+        help="Hide display information",
         action="store_true",
     )
 
@@ -256,9 +269,8 @@ if __name__ == "__main__":
         noise_multiplier = (
             cmd_args.noise_multiplier
         )  # [Renyi] Gaussian noise std is noise_multiplier * L
-        eta = lr
 
-        verbose = cmd_args.verbose
+        silent = cmd_args.silent
         log_interval = cmd_args.log_interval
         compute_features_force = cmd_args.compute_features_force  # Recompute the features
 
@@ -270,6 +282,8 @@ if __name__ == "__main__":
 
     args.hparam_dict = training_arguments
     args.metric_dict = {}
-    print(training_arguments)
+
+    if not args.silent:
+        print(training_arguments)
 
     run(args)

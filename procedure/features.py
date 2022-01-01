@@ -5,6 +5,8 @@ import torch
 from torch.nn import Module
 from torch.utils.data import Dataset, DataLoader
 
+from compute.beta import compute_beta
+
 
 class FeatureDataset(Dataset):
     def __init__(self, args=None, feature_extractor=None, data_loader=None):
@@ -48,6 +50,9 @@ def compute_features(
     only computed once.
     In addition, there is a caching mechanism which stores the features between several
     computations with the same setting
+
+    The parameter beta which is dataset et model dependent, and quite slow to compute,
+    is also cached.
     """
 
     feature_key = f"{args.date}-features-{args.model}-{args.dataset}"
@@ -56,7 +61,7 @@ def compute_features(
     if not args.compute_features_force:
         try:
             with open(file_path, "rb") as file:
-                train_features, train_targets, test_features, test_targets = pickle.load(file)
+                train_features, train_targets, test_features, test_targets, beta = pickle.load(file)
 
                 feature_train_dataset = FeatureDataset()
                 feature_train_dataset.features = train_features
@@ -72,22 +77,33 @@ def compute_features(
                     feature_test_dataset, batch_size=args.test_batch_size, shuffle=True
                 )
 
-            print("Features loaded!")
+                args.beta = beta
+
+            if not args.silent:
+                print("Features loaded!")
             return feature_train_loader, feature_test_loader
         except FileNotFoundError:
             pass
 
-    print("Compute training features...")
+    if not args.silent:
+        print("Compute training features...")
     feature_train_dataset = FeatureDataset(args, feature_extractor, train_loader)
     feature_train_loader = DataLoader(
         feature_train_dataset, batch_size=args.batch_size, shuffle=True
     )
 
-    print("Compute test features...")
+    if not args.silent:
+        print("Compute test features...")
     feature_test_dataset = FeatureDataset(args, feature_extractor, test_loader)
     feature_test_loader = DataLoader(
         feature_test_dataset, batch_size=args.test_batch_size, shuffle=True
     )
+
+    if not args.silent:
+        print("Compute beta...")
+    beta = compute_beta(args, feature_train_loader)
+    args.beta = beta
+    print(1 / beta)
 
     with open(file_path, "wb") as file:
         pickle.dump(
@@ -96,6 +112,7 @@ def compute_features(
                 feature_train_dataset.targets,
                 feature_test_dataset.features,
                 feature_test_dataset.targets,
+                beta,
             ),
             file,
         )
