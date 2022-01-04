@@ -44,8 +44,24 @@ def run(args):
     if args.lr == -1:
         multiplier = 10 ** 4
         args.lr = int(1 / args.beta * multiplier) / multiplier
-        if not args.silent:
+        if not args.silent and not args.decreasing:
             print(f"AUTO: lr set to 1 / beta = {args.lr}")
+
+    # args.decreasing overwrites the value of args.lr if it was provided
+    if args.decreasing:
+        multiplier = 10 ** 4
+        args.lr = int(1 / (2 * args.beta) * multiplier) / multiplier
+        if not args.silent:
+            print(f"AUTO: lr set to 1 / (2 * beta) = {args.lr}")
+        args.k = 0
+
+    training_arguments = {
+        key: getattr(args, key) for key in dir(type(args)) if not key.startswith("_")
+    }
+    args.hparam_dict = training_arguments
+    args.metric_dict = {}
+    if not args.silent:
+        print(training_arguments)
 
     optimizer_kwargs = dict(lr=args.lr, weight_decay=args.lambd)
     if args.optim == "sgd":
@@ -145,6 +161,12 @@ if __name__ == "__main__":
         type=float,
         help="Learning rate of the SGD. Default 1 / beta.",
         default=-1,
+    )
+
+    parser.add_argument(
+        "--decreasing",
+        help="Use a decreasing learning rate in 1 / (2 beta + lambda k / 2).",
+        action="store_true",
     )
 
     parser.add_argument(
@@ -252,6 +274,7 @@ if __name__ == "__main__":
         epochs = cmd_args.epochs
         optim = cmd_args.optim
         lr = cmd_args.lr
+        decreasing = cmd_args.decreasing
 
         if cmd_args.langevin:
             dp = "langevin"
@@ -275,16 +298,6 @@ if __name__ == "__main__":
         compute_features_force = cmd_args.compute_features_force  # Recompute the features
 
     args = Arguments()
-
-    training_arguments = {
-        key: getattr(args, key) for key in dir(Arguments) if not key.startswith("_")
-    }
-
-    args.hparam_dict = training_arguments
-    args.metric_dict = {}
-
-    if not args.silent:
-        print(training_arguments)
 
     torch.manual_seed(args.seed)
     run(args)

@@ -29,7 +29,12 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
                 for param in classifier.parameters():
                     param += (factor * torch.randn(param.shape)).to(args.device)
 
+        if args.decreasing:
+            args.k += 1
+            args.lr = 1 / (2 * args.beta + args.lambd * args.k / 2)
+
         losses.append(loss.item())
+
         if not args.silent and (batch_idx + 1) % args.log_interval == 0:
             print(
                 "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(

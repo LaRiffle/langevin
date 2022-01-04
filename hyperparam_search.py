@@ -39,9 +39,10 @@ class Arguments:
     epochs = 30
     optim = "sgd"
     lr = -1
+    decreasing = True
 
     # "langevin", "renyi" or False
-    dp = "renyi"
+    dp = False
 
     delta = 1e-5
     alphas = range(1, 2000)
