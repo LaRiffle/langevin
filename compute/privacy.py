@@ -24,7 +24,7 @@ def get_privacy_spent(args, epoch):
     sigma = args.sigma
     alphas = args.alphas
 
-    assert eta < 1 / beta
+    assert eta < 1 / beta, "This condition is necessary for DP-SGLD."
     # I don't think this is relevant => epsilon_renyi = alpha * Sg ** 2 / (lambd * sigma**2 * n**2 * (1 - eta * beta)**2)
     epsilons = []
     for alpha in alphas:

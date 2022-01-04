@@ -64,7 +64,6 @@ class PneumoniaDataset(th.utils.data.Dataset):
 
 
 def pneumonia(args):
-
     transform = transforms.Compose(
         [
             transforms.Resize(256),

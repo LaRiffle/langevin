@@ -102,48 +102,48 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        help="model to use for inference (resnet18, alexnet)",
+        help="Model to use for inference (resnet18, alexnet)",
         default="resnet18",
     )
 
     parser.add_argument(
         "--dataset",
         type=str,
-        help="dataset to use (cifar10, pneumonia).",
+        help="Dataset to use (cifar10, pneumonia).",
         default="cifar10",
     )
 
     parser.add_argument(
         "--batch_size",
         type=int,
-        help="size of the batch to use. Default 128",
+        help="Size of the batch to use. Default 128",
         default=128,
     )
     parser.add_argument(
         "--test_batch_size",
         type=int,
-        help="size of the batch to use for testing. Default: as batch_size",
+        help="Size of the batch to use for testing. Default: as batch_size",
         default=None,
     )
 
     parser.add_argument(
         "--epochs",
         type=int,
-        help="[needs --train] number of epochs to train on. Default 30",
+        help="Number of epochs to train on. Default 30",
         default=30,
     )
 
     parser.add_argument(
         "--optim",
         type=str,
-        help="optimizer to use (sgd, adam)",
+        help="Optimizer to use (sgd, adam)",
         default="sgd",
     )
 
     parser.add_argument(
         "--lr",
         type=float,
-        help="[needs --train] learning rate of the SGD. Default 1 / beta.",
+        help="Learning rate of the SGD. Default 1 / beta.",
         default=-1,
     )
 
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--beta",
         type=float,
-        help="[needs --optim adam] Smoothness constant estimation. Default 110.",
+        help="[needs --langevin] Smoothness constant estimation. Default 110.",
         default=110,
     )
 
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_interval",
         type=int,
-        help="Log intermediate metrics every n batches. Default 100",
+        help="Log intermediate metrics every n batches. Default 1000",
         default=1000,
     )
 
@@ -286,4 +286,5 @@ if __name__ == "__main__":
     if not args.silent:
         print(training_arguments)
 
+    torch.manual_seed(args.seed)
     run(args)

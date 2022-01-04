@@ -28,10 +28,12 @@ def resnet(args):
         param.requires_grad = False
 
     classifier = nn.Linear(in_features=512, out_features=args.out_features)
-    # Put the appropriate Langevin initialization of the weights: theta_0 ~ proj( N(0, 2 sigma^2 / lambda) )
-    std = 2 * args.sigma ** 2 / args.lambd
-    nn.init.normal_(classifier.weight, mean=0.0, std=std)
-    nn.init.normal_(classifier.bias, mean=0.0, std=std)
+
+    if args.dp == "langevin":
+        # Put the appropriate Langevin initialization of the weights: theta_0 ~ proj( N(0, 2 sigma^2 / lambda) )
+        std = 2 * args.sigma ** 2 / args.lambd
+        nn.init.normal_(classifier.weight, mean=0.0, std=std)
+        nn.init.normal_(classifier.bias, mean=0.0, std=std)
 
     resnet.to(args.device)
     classifier.to(args.device)

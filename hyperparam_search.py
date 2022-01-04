@@ -63,6 +63,9 @@ print("Base arguments")
 print(training_arguments)
 
 
+results = []
+
+
 def explore_hyperparams(args, hyperparams, setting=""):
     hyperparam = list(hyperparams.keys())[0]
     values = hyperparams[hyperparam]
@@ -83,7 +86,7 @@ def explore_hyperparams(args, hyperparams, setting=""):
             else:
                 method = "No DP"
 
-            dataset = args.dataset.capitalize()
+            dataset = args.dataset.upper() if "cifar" in args.dataset else args.dataset.capitalize()
 
             model = args.model.capitalize()
 
@@ -92,6 +95,9 @@ def explore_hyperparams(args, hyperparams, setting=""):
                 epsilon = epsilon.item()
             epsilon = round(epsilon, 2) if epsilon is not None else "-"
             print(f"{method} & {dataset} & {model} & {epochs} & {epsilon} & {accuracy}")
+            results.append([method, dataset, model, epochs, epsilon, accuracy])
 
 
 explore_hyperparams(args, hyperparams_config)
+
+print(results)

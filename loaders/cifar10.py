@@ -3,8 +3,6 @@ from torchvision import datasets, transforms
 
 
 def cifar10(args):
-    torch.manual_seed(args.seed)
-
     train_kwargs = {"batch_size": args.batch_size}
     test_kwargs = {"batch_size": args.test_batch_size}
     if torch.cuda.is_available():
