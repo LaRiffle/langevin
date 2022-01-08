@@ -25,6 +25,8 @@ def run(args):
 
     if args.model == "resnet18":
         feature_extractor, classifier = resnet(args)
+    elif args.model == "resnet18-finetuning":
+        feature_extractor, classifier = resnet(args, finetuning=True)
     elif args.model == "alexnet":
         feature_extractor, classifier = alexnet(args)
     else:
@@ -133,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        help="Model to use for inference (resnet18, alexnet)",
+        help="Model to use for inference (resnet18, alexnet, resnet18-finetuning). resnet18-finetuning cannot be used with --langevin",
         default="resnet18",
     )
 
@@ -281,6 +283,10 @@ if __name__ == "__main__":
 
         model = cmd_args.model.lower()
         dataset = cmd_args.dataset.lower()
+        if dataset == "renyi-finetuning":
+            assert (
+                not cmd_args.langevin
+            ), "Finetuning the last layers of Rényi is incompatible with --langevin as this makes the task non-convex"
         n_train = -1  # size of the train data (is set later when loading the data)
         n_test = -1  # size of the test data (is set later when loading the data)
         if dataset == "cifar10":

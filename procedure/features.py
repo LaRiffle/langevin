@@ -20,7 +20,9 @@ class FeatureDataset(Dataset):
                     self.batch_size = len(data)
 
                 data, target = data.to(args.device), target.to(args.device)
-                features = feature_extractor(data)
+
+                with torch.no_grad():
+                    features = feature_extractor(data)
 
                 self.features.append(features)
                 self.targets.append(target)
@@ -101,7 +103,11 @@ def compute_features(
 
     if not args.silent:
         print("Compute beta...")
-    beta = compute_beta(args, feature_train_loader)
+
+    if args.model == "resnet18-finetuning":  # A default value for this non-smooth task
+        beta = 1
+    else:
+        beta = compute_beta(args, feature_train_loader)
     args.beta = beta
     print(1 / beta)
 

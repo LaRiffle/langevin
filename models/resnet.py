@@ -11,7 +11,15 @@ class Empty(nn.Module):
         return x
 
 
-def resnet(args):
+def resnet(args, finetuning=False):
+    """
+    Build a backbone model based on resnet18 and a head/classifier.
+
+    Args:
+        args:
+        finetuning: when True, add in the classifier the last block of the resnet to allow for
+            more finetuning. This only works without DP or with Rényi as implemented in Opacus.
+    """
     pre_trained_from_imagenet = args.dataset == "pneumonia"
 
     resnet = torchvision.models.resnet18(pretrained=pre_trained_from_imagenet)
@@ -25,22 +33,40 @@ def resnet(args):
         state_dict = th.load(path, map_location=args.device)
         resnet.load_state_dict(state_dict)
 
-    resnet.fc = Empty()
+    if finetuning:
+        resnet.fc = nn.Linear(in_features=512, out_features=args.out_features)
 
-    for param in resnet.parameters():
-        param.requires_grad = False
+        resnet_modules = list(resnet.children())
 
-    classifier = nn.Linear(in_features=512, out_features=args.out_features)
+        backbone = nn.Sequential(*resnet_modules[:-3])
+        head = nn.Sequential(*resnet_modules[-3:-1], nn.Flatten(), nn.Linear(512, 10))
 
-    if args.dp == "langevin":
-        # Put the appropriate Langevin initialization of the weights: theta_0 ~ proj( N(0, 2 sigma^2 / lambda) )
-        std = 2 * args.sigma ** 2 / args.lambd
-        nn.init.normal_(classifier.weight, mean=0.0, std=std)
-        nn.init.normal_(classifier.bias, mean=0.0, std=std)
+        if args.dp == "renyi":
+            from opacus.validators.module_validator import ModuleValidator
 
-    resnet.to(args.device)
-    classifier.to(args.device)
+            head = ModuleValidator.fix(head)
 
-    resnet.eval()
+        backbone = backbone.eval()
+        head = head.train()
 
-    return resnet, classifier
+        return backbone, head
+    else:
+        resnet.fc = Empty()
+
+        for param in resnet.parameters():
+            param.requires_grad = False
+
+        classifier = nn.Linear(in_features=512, out_features=args.out_features)
+
+        if args.dp == "langevin":
+            # Put the appropriate Langevin initialization of the weights: theta_0 ~ proj( N(0, 2 sigma^2 / lambda) )
+            std = 2 * args.sigma ** 2 / args.lambd
+            nn.init.normal_(classifier.weight, mean=0.0, std=std)
+            nn.init.normal_(classifier.bias, mean=0.0, std=std)
+
+        resnet.to(args.device)
+        classifier.to(args.device)
+
+        resnet.eval()
+
+        return resnet, classifier
