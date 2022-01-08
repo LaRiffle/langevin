@@ -51,10 +51,13 @@ class Arguments:
     beta = -1  # β-smoothness of the loss function
     sigma = 0.002  # [Langevin] Gaussian noise is N(0, 2.σ^2/λ)
     noise_multiplier = 1.2  # [Renyi] Gaussian noise std is noise_multiplier * L
+    k = 0  # Number of batches processed
 
     silent = True
     log_interval = 1000
     compute_features_force = False  # Recompute the features
+
+    parameter_info = True
 
 
 args = Arguments()
@@ -91,7 +94,9 @@ def explore_hyperparams(args, hyperparams, setting=""):
 
             model = args.model.capitalize()
 
+            torch.manual_seed(args.seed)
             epochs, epsilon, accuracy = run(args)
+
             if isinstance(epsilon, torch.Tensor):
                 epsilon = epsilon.item()
             epsilon = round(epsilon, 2) if epsilon is not None else "-"

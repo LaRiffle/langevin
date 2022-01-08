@@ -37,7 +37,7 @@ def run(args):
     else:
         raise ValueError("Unknown dataset")
 
-    # Compute the features once to be more efficient
+    # Compute the features once to be more efficient, load beta as well if needed
     train_loader, test_loader = compute_features(args, feature_extractor, train_loader, test_loader)
 
     # Auto set the lr to 1 / beta if needed (beta can only be accessed now)
@@ -53,7 +53,6 @@ def run(args):
         args.lr = int(1 / (2 * args.beta) * multiplier) / multiplier
         if not args.silent:
             print(f"AUTO: lr set to 1 / (2 * beta) = {args.lr}")
-        args.k = 0
 
     training_arguments = {
         key: getattr(args, key) for key in dir(type(args)) if not key.startswith("_")
@@ -97,16 +96,32 @@ def run(args):
     writer = SummaryWriter()
 
     accuracies = []
+    alphas = []
     for epoch in range(args.epochs):
-        epsilon = sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch)
+        epsilon, alpha = sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch)
         accuracy = test(args, classifier, test_loader, epoch)
         accuracies.append(accuracy)
+        alphas.append(alpha)
         writer.add_scalar("accuracy/accuracy", accuracy, epoch)
 
     best_accuracy = round(max(accuracies), 2)
     if not args.silent:
         print("Best accuracy", best_accuracy)
     writer.close()
+
+    if args.parameter_info:
+        accuracies = torch.tensor(accuracies)
+        best_idx = torch.argmax(accuracies)
+        alpha = alphas[best_idx]
+
+        beta_per_lambda = args.beta / args.lambd
+        eps_n2_per_alpha_d = (1 * args.n_train ** 2) / (alpha * args.out_features)
+
+        print("beta", args.beta)
+        print("beta / lambda", beta_per_lambda)
+        print("eps n^2 / (alpha d)", eps_n2_per_alpha_d)
+
+        print("regime n^4", eps_n2_per_alpha_d / beta_per_lambda ** 2)
 
     return args.epochs, epsilon, best_accuracy
 
@@ -198,8 +213,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--beta",
         type=float,
-        help="[needs --langevin] Smoothness constant estimation. Default 110.",
-        default=110,
+        help="[needs --langevin] Smoothness constant estimation. Default AUTO-COMPUTED.",
+        default=-1,
     )
 
     parser.add_argument(
@@ -237,6 +252,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--compute_features_force",
+        help="Force computation of the features even if already computed",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--log_interval",
         type=int,
         help="Log intermediate metrics every n batches. Default 1000",
@@ -244,8 +265,8 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--compute_features_force",
-        help="Force computation of the features even if already computed",
+        "--parameter_info",
+        help="Print extra information about the parameter values.",
         action="store_true",
     )
 
@@ -292,8 +313,10 @@ if __name__ == "__main__":
         noise_multiplier = (
             cmd_args.noise_multiplier
         )  # [Renyi] Gaussian noise std is noise_multiplier * L
+        k = 0  # Number of batches processed
 
         silent = cmd_args.silent
+        parameter_info = cmd_args.parameter_info
         log_interval = cmd_args.log_interval
         compute_features_force = cmd_args.compute_features_force  # Recompute the features
 

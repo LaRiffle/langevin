@@ -10,9 +10,9 @@ def get_privacy_spent(args, epoch):
     that the PrivacyEngine was initialized with. It returns the optimal alpha
     together with the best epsilon.
 
-    Condition TODO : ℓ(θ; x) be an L-Lipschitz, λ-strongly convex, and β-smooth loss function on closed convex set C,
-    Condition : assert eta < 1/beta
-    Condition : initialization of the weight : theta_0 ~ proj( N(0, 2 sigma^2 / lambda) )
+    Condition: ℓ(θ; x) be an L-Lipschitz, λ-strongly convex, and β-smooth loss function on closed convex set C,
+    Condition:  assert eta < 1/beta
+    Condition: initialization of the weight : theta_0 ~ proj( N(0, 2 sigma^2 / lambda) )
     """
     K = epoch
     L = args.L
@@ -28,11 +28,19 @@ def get_privacy_spent(args, epoch):
     # I don't think this is relevant => epsilon_renyi = alpha * Sg ** 2 / (lambd * sigma**2 * n**2 * (1 - eta * beta)**2)
     epsilons = []
     for alpha in alphas:
-        epsilon_renyi = (
-            (4 * alpha * L ** 2)
-            / (lambd * sigma ** 2 * n ** 2)
-            * (1 - np.exp(-lambd * eta * K / 2).item())
-        )
+        if not args.decreasing:
+            epsilon_renyi = (
+                (4 * alpha * L ** 2)
+                / (lambd * sigma ** 2 * n ** 2)
+                * (1 - np.exp(-lambd * eta * K / 2).item())
+            )
+        else:
+            epsilon_renyi = (
+                (4 * alpha * L ** 2)
+                / (lambd * sigma ** 2 * n ** 2)
+                * (lambd * K)
+                / (4 * beta + lambd * K)
+            )
         epsilon_dwork = epsilon_renyi + th.log(th.tensor(1 / delta)) / (alpha - 1)
         epsilons.append(epsilon_dwork)
 

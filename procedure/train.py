@@ -29,8 +29,8 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
                 for param in classifier.parameters():
                     param += (factor * torch.randn(param.shape)).to(args.device)
 
+        args.k += 1
         if args.decreasing:
-            args.k += 1
             args.lr = 1 / (2 * args.beta + args.lambd * args.k / 2)
 
         losses.append(loss.item())
@@ -64,4 +64,4 @@ def sgd_train(args, classifier, train_loader, optimizer, privacy_engine, epoch):
         else:
             print(f"Epoch {epoch} : Train  Loss: {np.mean(losses):.6f}")
 
-    return epsilon if args.dp else None
+    return (epsilon, best_alpha) if args.dp else (None, None)
