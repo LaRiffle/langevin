@@ -12,15 +12,18 @@ class Empty(nn.Module):
 
 
 def resnet(args):
-    resnet = torchvision.models.resnet18(pretrained=False)
+    pre_trained_from_imagenet = args.dataset == "pneumonia"
+
+    resnet = torchvision.models.resnet18(pretrained=pre_trained_from_imagenet)
 
     # these ops are necessary to match the architecture of the model stored
     resnet.maxpool, resnet.relu = resnet.relu, resnet.maxpool
     resnet.fc = nn.Linear(in_features=512, out_features=100)
 
-    path = "data/resnet-cifar100-best-model.pt"
-    state_dict = th.load(path, map_location=args.device)
-    resnet.load_state_dict(state_dict)
+    if not pre_trained_from_imagenet:
+        path = "data/resnet-cifar100-best-model.pt"
+        state_dict = th.load(path, map_location=args.device)
+        resnet.load_state_dict(state_dict)
 
     resnet.fc = Empty()
 

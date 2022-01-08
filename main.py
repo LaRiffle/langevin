@@ -275,7 +275,7 @@ if __name__ == "__main__":
     today = datetime.datetime.today()
 
     class Arguments:
-        seed = 1
+        seed = cmd_args.seed
         date = f"{today.year}-{'0' if today.month < 10 else ''}{today.month}-{'0' if today.day < 10 else ''}{today.day}"
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
