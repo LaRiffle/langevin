@@ -46,6 +46,9 @@ def resnet(args, finetuning=False):
 
             head = ModuleValidator.fix(head)
 
+        backbone.to(args.device)
+        head.to(args.device)
+
         backbone = backbone.eval()
         head = head.train()
 
