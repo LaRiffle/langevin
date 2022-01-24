@@ -8,9 +8,17 @@ This is the open-source implementation of the paper:
 
 ### From Source
 ```
-git clone URL
+cd ~
+git clone https://github.com/XXX/langevin.git
 cd langevin
 pip install -r requirements.txt
+```
+
+Add the Pneumonia dataset:
+```
+cd ~
+git clone https://github.com/gkaissis/PriMIA.git
+mv PriMIA/data/* langevin/data/pneumonia/
 ```
 
 ### With Docker 

@@ -11,5 +11,7 @@ WORKDIR ${HOME}
 
 COPY . ${HOME}/
 
+RUN  git clone https://github.com/gkaissis/PriMIA.git && mv PriMIA/data/* ${HOME}/data/pneumonia/
+
 ENTRYPOINT ["tail"]
 CMD ["-f","/dev/null"]
